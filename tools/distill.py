@@ -21,19 +21,64 @@ import json
 import subprocess
 import argparse
 import shutil
+import urllib.request
+import urllib.parse
+import re
 from pathlib import Path
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-sys.path.insert(0, "/root/.hermes/scripts")
-from tavily_client import tavily_search, tavily_extract
+# ── 依赖加载（容错） ──
+_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _DIR)
 
-SMART_CRAWL = "/root/.hermes/scripts/smart_crawl.py"
+HAS_TAVILY = False
+try:
+    from tavily_client import tavily_search, tavily_extract
+    HAS_TAVILY = True
+except (ImportError, RuntimeError):
+    pass
+
+if not HAS_TAVILY:
+    print("⚠ Tavily 未配置，将使用 DuckDuckGo 免费搜索（质量较低）。", file=sys.stderr)
+    print("  配置方法：复制 tavily_keys.example.py → tavily_keys.py 并填入 key", file=sys.stderr)
+    print("  获取 key: https://tavily.com/\n", file=sys.stderr)
+
+SMART_CRAWL = os.path.join(_DIR, "smart_crawl.py")
 RESEARCH_DIR = Path(os.path.expanduser("~/.hermes/characters/_research"))
 
 BLACKLIST = ["baike.baidu.com", "mp.weixin.qq.com"]
 YTDLP = shutil.which("yt-dlp") or os.path.expanduser("~/.local/bin/yt-dlp")
 HAS_YTDLP = os.path.isfile(YTDLP) and os.access(YTDLP, os.X_OK)
+
+
+# ═══════════════════════════════════════════════════════════
+# DuckDuckGo 免费搜索（零配置 fallback）
+# ═══════════════════════════════════════════════════════════
+
+def _duckduckgo_search(query, max_results=5):
+    """DuckDuckGo HTML 搜索（无需 API key）"""
+    try:
+        url = "https://html.duckduckgo.com/html/?" + urllib.parse.urlencode({"q": query})
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            html = resp.read().decode("utf-8", errors="ignore")
+        results = []
+        # 提取搜索结果
+        for match in re.finditer(r'<a rel="nofollow" class="result__a" href="([^"]+)"[^>]*>(.*?)</a>.*?<a class="result__snippet"[^>]*>(.*?)</a>', html, re.DOTALL):
+            href, title, snippet = match.groups()
+            # DuckDuckGo 的 href 需要解码
+            if "uddg=" in href:
+                href = urllib.parse.unquote(href.split("uddg=")[1].split("&")[0])
+            title = re.sub(r'<[^>]+>', '', title).strip()
+            snippet = re.sub(r'<[^>]+>', '', snippet).strip()
+            if href and snippet:
+                results.append({"url": href, "content": f"{title}. {snippet}"})
+            if len(results) >= max_results:
+                break
+        return results
+    except Exception:
+        return []
 
 
 # ═══════════════════════════════════════════════════════════
@@ -128,6 +173,8 @@ def _is_blacklisted(url):
 
 
 def _tavily_search(query, max_results=5):
+    if not HAS_TAVILY:
+        return None
     try:
         result = tavily_search(query, max_results=max_results)
         return result.get("results", [])
@@ -149,9 +196,16 @@ def _playwright_search(query):
 
 
 def search_with_fallback(query, max_results=5):
+    """搜索：Tavily → DuckDuckGo → Playwright → 空"""
+    # 第一层：Tavily
     results = _tavily_search(query, max_results)
-    if results is not None:
+    if results is not None and len(results) > 0:
         return results
+    # 第二层：DuckDuckGo（零配置）
+    results = _duckduckgo_search(query, max_results)
+    if results:
+        return results
+    # 第三层：Playwright
     results = _playwright_search(query)
     if results is not None:
         return results
@@ -159,32 +213,38 @@ def search_with_fallback(query, max_results=5):
 
 
 def fetch_url(url):
-    """抓取 URL：Tavily → smart_crawl → force-playwright"""
+    """抓取 URL：Tavily → smart_crawl → urllib fallback"""
     # Tavily extract
+    if HAS_TAVILY:
+        try:
+            result = tavily_extract([url])
+            results = result.get("results", [])
+            if results and len(results[0].get("raw_content", "")) > 100:
+                return results[0]["raw_content"]
+        except Exception:
+            pass
+    # smart_crawl（如果存在）
+    if os.path.isfile(SMART_CRAWL):
+        try:
+            r = subprocess.run(
+                ["python3", SMART_CRAWL, url], capture_output=True, text=True, timeout=60
+            )
+            if r.returncode == 0 and len(r.stdout.strip()) > 100:
+                return r.stdout.strip()
+        except Exception:
+            pass
+    # 简易 urllib fallback
     try:
-        result = tavily_extract([url])
-        results = result.get("results", [])
-        if results and len(results[0].get("raw_content", "")) > 100:
-            return results[0]["raw_content"]
-    except Exception:
-        pass
-    # smart_crawl（内置 fallback）
-    try:
-        r = subprocess.run(
-            ["python3", SMART_CRAWL, url], capture_output=True, text=True, timeout=60
-        )
-        if r.returncode == 0 and len(r.stdout.strip()) > 100:
-            return r.stdout.strip()
-    except Exception:
-        pass
-    # 强制 Playwright
-    try:
-        r = subprocess.run(
-            ["python3", SMART_CRAWL, url, "--force-playwright"],
-            capture_output=True, text=True, timeout=60
-        )
-        if r.returncode == 0 and len(r.stdout.strip()) > 100:
-            return r.stdout.strip()
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            html = resp.read().decode("utf-8", errors="ignore")
+        # 粗略提取正文
+        text = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL)
+        text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL)
+        text = re.sub(r'<[^>]+>', ' ', text)
+        text = re.sub(r'\s+', ' ', text).strip()
+        if len(text) > 100:
+            return text[:8000]
     except Exception:
         pass
     return ""

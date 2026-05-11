@@ -21,22 +21,26 @@
 ```bash
 # 克隆仓库
 git clone https://github.com/Lzh-xbccz/hermes-roleplay-engine.git
+cd hermes-roleplay-engine
 
-# 复制引擎到 Hermes 目录
-cp hermes-roleplay-engine/src/character_engine.py ~/.hermes/characters/
-cp hermes-roleplay-engine/src/worldbook_engine.py ~/.hermes/characters/
+# 创建目录并复制引擎
+mkdir -p ~/.hermes/characters
+cp src/character_engine.py ~/.hermes/characters/
+cp src/worldbook_engine.py ~/.hermes/characters/
 
-# 复制工具
-cp hermes-roleplay-engine/tools/distill.py ~/.hermes/skills/character-distiller/scripts/
-cp hermes-roleplay-engine/tools/png_parser.py ~/.hermes/skills/sillytavern-roleplay/scripts/
+# 配置搜索工具（蒸馏功能需要）
+cp tools/tavily_keys.example.py tools/tavily_keys.py
+# 编辑 tools/tavily_keys.py 填入你的 Tavily API key
+# 获取 key: https://tavily.com/ （免费 1000次/月）
+# 不配置也能用——蒸馏器会自动降级到 DuckDuckGo 免费搜索
 ```
 
 ### 依赖
 
 - Python 3.10+
 - PyYAML（可选，无则使用内置简易解析器）
-- Tavily API key（蒸馏功能需要，配置在 `~/.hermes/scripts/tavily_keys.py`）
-- Playwright + Node.js（蒸馏 fallback 爬虫，可选）
+- Tavily API key（可选，蒸馏功能首选搜索引擎）
+- Node.js + Playwright（可选，反爬 fallback）
 
 ## 🚀 基本使用
 
@@ -51,15 +55,21 @@ python3 ~/.hermes/characters/character_engine.py unload
 python3 ~/.hermes/characters/character_engine.py status
 ```
 
+角色卡文件（.yaml 或 .json）放在 `~/.hermes/characters/` 目录下即可被引擎识别。
+
 ## 🧬 角色蒸馏器
 
 输入任意角色名，自动搜索公开信息 → 5维心理建模 → 生成角色卡：
 
 ```bash
+# 在仓库目录下执行
+cd hermes-roleplay-engine
+
 # 调研角色（三路并行：基础档案/台词行为/社区解读）
 python3 tools/distill.py "宇智波鼬" "火影忍者" --type anime
 
 # 支持的类型：game / anime / novel / film / auto
+# 无需配置 Tavily 也能用（自动降级到 DuckDuckGo）
 ```
 
 调研完成后，Agent 读取材料执行提炼，生成 YAML 角色卡并自动加载。
@@ -80,11 +90,15 @@ python3 tools/distill.py "宇智波鼬" "火影忍者" --type anime
 
 ### 容错与降级
 
-| 层级 | 策略 |
-|------|------|
-| 第一层 | Tavily Search/Extract |
-| 第二层 | Playwright + Stealth 爬虫 |
-| 第三层 | 提示用户手工补充材料 |
+| 层级 | 策略 | 需要配置 |
+|------|------|---------|
+| 第一层 | Tavily Search/Extract（质量最高） | 需要 API key |
+| 第二层 | DuckDuckGo HTML 搜索（零配置） | 无需配置 |
+| 第三层 | urllib 简易抓取 | 无需配置 |
+| 第四层 | Playwright + Stealth（反爬） | 需要 Node.js |
+| 第五层 | 提示用户手工补充材料 | — |
+
+**零配置即可使用**：不配置任何 API key，蒸馏器也能通过 DuckDuckGo 完成基础调研。
 
 ## 🏗️ 架构
 
@@ -108,13 +122,18 @@ python3 tools/distill.py "宇智波鼬" "火影忍者" --type anime
 ```
 hermes-roleplay-engine/
 ├── src/
-│   ├── character_engine.py    # 核心引擎（加载/卸载/存档/World Book索引）
-│   └── worldbook_engine.py    # World Book 管理工具
+│   ├── character_engine.py      # 核心引擎（加载/卸载/存档/World Book索引）
+│   └── worldbook_engine.py      # World Book 管理工具
 ├── tools/
-│   ├── distill.py             # 角色蒸馏器（调研模块）
-│   └── png_parser.py          # PNG 角色卡导入（Chub/JanitorAI）
+│   ├── distill.py               # 角色蒸馏器（调研模块）
+│   ├── tavily_client.py         # Tavily API 轮询客户端
+│   ├── tavily_keys.example.py   # API key 配置模板
+│   ├── smart_crawl.py           # 统一爬虫入口（Tavily→Playwright）
+│   └── png_parser.py            # PNG 角色卡导入（Chub/JanitorAI）
 ├── docs/
-│   └── card-format.md         # 角色卡格式规范
+│   └── card-format.md           # 角色卡格式规范
+├── .gitignore
+├── LICENSE
 └── README.md
 ```
 
@@ -159,26 +178,26 @@ system_prompt: |
 
 ```bash
 # ═══ 角色管理 ═══
-python3 character_engine.py load <名称>      # 加载角色
-python3 character_engine.py unload           # 卸载角色
-python3 character_engine.py status           # 查看状态
+python3 ~/.hermes/characters/character_engine.py load <名称>
+python3 ~/.hermes/characters/character_engine.py unload
+python3 ~/.hermes/characters/character_engine.py status
 
 # ═══ 存档系统（每角色最多3槽位） ═══
-echo "对话摘要" | python3 character_engine.py save <角色名> "场景简述"
-python3 character_engine.py list [角色名]    # 列出存档
-python3 character_engine.py resume <角色名> <1|2|3>  # 恢复存档
-python3 character_engine.py delete <角色名> <1|2|3>  # 删除存档
+echo "对话摘要" | python3 ~/.hermes/characters/character_engine.py save <角色名> "场景简述"
+python3 ~/.hermes/characters/character_engine.py list [角色名]
+python3 ~/.hermes/characters/character_engine.py resume <角色名> <1|2|3>
+python3 ~/.hermes/characters/character_engine.py delete <角色名> <1|2|3>
 
 # ═══ World Book ═══
-python3 worldbook_engine.py list             # 列出世界书
-python3 worldbook_engine.py load <名>        # 加载世界书
+python3 ~/.hermes/characters/worldbook_engine.py list
+python3 ~/.hermes/characters/worldbook_engine.py load <名>
 
 # ═══ PNG 角色卡导入 ═══
-python3 png_parser.py <card.png> --save      # 从 PNG 导入角色卡
+python3 tools/png_parser.py <card.png> --save
 
-# ═══ 角色蒸馏 ═══
-python3 distill.py "角色名" "作品名"          # 调研角色
-python3 distill.py "角色名" "作品名" --type anime --lang zh
+# ═══ 角色蒸馏（在仓库目录下执行） ═══
+python3 tools/distill.py "角色名" "作品名"
+python3 tools/distill.py "角色名" "作品名" --type anime --lang zh
 ```
 
 ## 🧠 5维心理建模
