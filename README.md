@@ -1,227 +1,137 @@
-# 基于HRE的AI人物对话Web可视化
+# AI人物对话Web可视化平台
 
-> 基于 Hermes Roleplay Engine 的 AI 角色对话 Web 可视化平台 — 沉浸式角色扮演 + 世界书管理 + 存档系统
+**仓库地址**: [https://github.com/TianYa-DAO/ai-character-dialogue-web](https://github.com/TianYa-DAO/ai-character-dialogue-web)
 
-一个让 AI 真正"成为"角色的引擎，而非简单的语气模仿。
+> 基于 Hermes Roleplay Engine 的 AI 角色对话 Web 可视化平台 — 沉浸式角色扮演 + 世界书管理 + 存档系统 + Web UI
 
-## ✨ 核心特性
+**原项目地址**: https://github.com/Lzh-xbccz/hermes-roleplay-engine  
+**原作者**: [@Lzh-xbccz](https://github.com/Lzh-xbccz)
 
-- **5维心理建模** — 依恋模式/防御机制/核心图式/需求层级/道德推理，让角色回应有可追溯的行为逻辑
-- **身体一致性锁定** — 自动推断角色性别，生成不可违反的身体档案，防止描写混乱
-- **情感描写规范** — 微表情系统、心理独白三层结构、情绪惯性、关系递进
-- **对话生动性** — 口癖贯穿、情绪改变语言方式、潜台词、身体语言伴随对话
+---
+
+## ✨ 项目概述
+
+本项目是基于 Hermes Roleplay Engine（HRE）构建的 Web 可视化平台，提供直观的角色对话界面、世界书管理和存档系统，让 AI 角色扮演体验更加沉浸式和便捷。
+
+## 🚀 核心功能
+
+### Web 可视化界面
+- **角色选择** — 直观的角色列表展示，支持快速切换角色
+- **对话界面** — 简洁优雅的聊天界面，支持实时消息推送
+- **世界书管理** — 世界书加载/卸载，关键词触发式描写规范注入
+- **存档系统** — 每角色3槽位存档，支持手动/自动存档
+
+### AI 角色引擎特性
+- **5维心理建模** — 依恋模式/防御机制/核心图式/需求层级/道德推理
+- **身体一致性锁定** — 自动推断角色性别，生成不可违反的身体档案
+- **情感描写规范** — 微表情系统、心理独白三层结构、情绪惯性
+- **对话生动性** — 口癖贯穿、情绪改变语言方式、潜台词、身体语言
 - **文学导向描写** — 比喻通感替代检查清单，描写服务于情感
-- **角色蒸馏器** — 输入角色名，自动调研+心理建模，生成可用角色卡
-- **World Book 自动索引** — 关键词触发式描写规范注入
-- **存档系统** — 每角色3槽位，支持自动存档
 - **防抢话** — 四重约束，严禁代控用户行为
 
-## 📦 安装
+## 📦 快速开始
 
-```bash
-# 克隆仓库
-git clone https://github.com/Lzh-xbccz/hermes-roleplay-engine.git
-cd hermes-roleplay-engine
-
-# 创建目录并复制引擎
-mkdir -p ~/.hermes/characters
-cp src/character_engine.py ~/.hermes/characters/
-cp src/worldbook_engine.py ~/.hermes/characters/
-
-# 配置搜索工具（蒸馏功能需要）
-cp tools/tavily_keys.example.py tools/tavily_keys.py
-# 编辑 tools/tavily_keys.py 填入你的 Tavily API key
-# 获取 key: https://tavily.com/ （免费 1000次/月）
-# 不配置也能用——蒸馏器会自动降级到 DuckDuckGo 免费搜索
-```
-
-### 依赖
-
+### 环境要求
 - Python 3.10+
-- PyYAML（可选，无则使用内置简易解析器）
-- Tavily API key（可选，蒸馏功能首选搜索引擎）
-- Node.js + Playwright（可选，反爬 fallback）
+- Flask、requests、sseclient-py
 
-## 🚀 基本使用
-
+### 安装依赖
 ```bash
-# 加载角色（自动挂载 World Book + 切换模型参数）
-python3 ~/.hermes/characters/character_engine.py load <角色名>
-
-# 卸载角色（恢复原始 SOUL.md + 恢复参数）
-python3 ~/.hermes/characters/character_engine.py unload
-
-# 查看当前状态
-python3 ~/.hermes/characters/character_engine.py status
+# 安装 Web 服务依赖
+pip install flask requests sseclient-py
 ```
 
-角色卡文件（.yaml 或 .json）放在 `~/.hermes/characters/` 目录下即可被引擎识别。
+### 配置 API
+编辑 `web/config.py` 文件：
+```python
+# AI API 配置
+API_KEY = "your-api-key"
+API_BASE_URL = "https://api.deepseek.com"  # 或其他兼容 API
 
-## 🧬 角色蒸馏器
+# 服务配置
+HOST = "0.0.0.0"
+PORT = 5000
+```
 
-输入任意角色名，自动搜索公开信息 → 5维心理建模 → 生成角色卡：
-
+### 启动服务
 ```bash
-# 在仓库目录下执行
-cd hermes-roleplay-engine
-
-# 调研角色（三路并行：基础档案/台词行为/社区解读）
-python3 tools/distill.py "宇智波鼬" "火影忍者" --type anime
-
-# 支持的类型：game / anime / novel / film / auto
-# 无需配置 Tavily 也能用（自动降级到 DuckDuckGo）
+cd web
+python app.py
 ```
 
-调研完成后，Agent 读取材料执行提炼，生成 YAML 角色卡并自动加载。
+服务启动后访问：http://localhost:5000
 
-### 蒸馏流程
-
-```
-用户输入角色名
-  → Tavily 搜索（15key轮询，15000次/月）
-  → 三路并行调研
-      ├── Agent A: 基础档案（wiki/fandom/萌娘百科）
-      ├── Agent B: 台词与行为（语录/场景/对话风格）
-      └── Agent C: 社区解读（分析文章/争议讨论）
-  → 六项提炼 + 5维心理建模
-  → 生成 YAML 角色卡
-  → character_engine.py load
-```
-
-### 容错与降级
-
-| 层级 | 策略 | 需要配置 |
-|------|------|---------|
-| 第一层 | Tavily Search/Extract（质量最高） | 需要 API key |
-| 第二层 | DuckDuckGo HTML 搜索（零配置） | 无需配置 |
-| 第三层 | urllib 简易抓取 | 无需配置 |
-| 第四层 | Playwright + Stealth（反爬） | 需要 Node.js |
-| 第五层 | 提示用户手工补充材料 | — |
-
-**零配置即可使用**：不配置任何 API key，蒸馏器也能通过 DuckDuckGo 完成基础调研。
-
-## 🏗️ 架构
+## 📁 项目结构
 
 ```
-角色卡(JSON/YAML) → character_engine.py → SOUL.md
-                         ├── 多层任务框架（创意文学模式）
-                         ├── 核心规则（防抢话+防破墙+状态栏）
-                         ├── 身体一致性锁定（防描写混乱）
-                         ├── 文风锚定（first_mes 固定语调）
-                         ├── 角色设定（全部字段）
-                         ├── 情感描写规范（微表情+心理+关系递进）
-                         ├── 对话生动性规范（口癖+潜台词+身体语言）
-                         ├── 日常场景描写（生活细节+自然升温）
-                         ├── 叙事节奏控制（场景配比+留白）
-                         ├── 亲密场景描写（文学导向）
-                         └── World Book 自动索引（关键词触发）
+ai-character-dialogue-web/
+├── web/                          # Web 服务模块
+│   ├── app.py                   # Flask 应用入口
+│   ├── config.py                # 配置文件
+│   ├── ai.py                    # AI API 调用模块
+│   ├── dialogue.py              # 对话管理（SSE 实时推送）
+│   ├── worldbook.py             # 世界书 API 路由
+│   ├── misc.py                  # 杂项 API（配置、存档等）
+│   ├── templates/
+│   │   └── index.html           # 前端页面
+│   └── static/
+│       └── style.css            # 样式文件
+├── src/                          # 核心引擎
+│   ├── character_engine.py      # 角色引擎
+│   └── worldbook_engine.py      # 世界书管理
+├── tools/                        # 工具集
+│   ├── distill.py               # 角色蒸馏器
+│   ├── tavily_client.py         # Tavily API 客户端
+│   ├── smart_crawl.py           # 统一爬虫入口
+│   └── png_parser.py            # PNG 角色卡导入
+└── README.md                    # 项目说明
 ```
 
-## 📁 目录结构
+## ⚙️ API 配置
 
-```
-hermes-roleplay-engine/
-├── src/
-│   ├── character_engine.py      # 核心引擎（加载/卸载/存档/World Book索引）
-│   └── worldbook_engine.py      # World Book 管理工具
-├── tools/
-│   ├── distill.py               # 角色蒸馏器（调研模块）
-│   ├── tavily_client.py         # Tavily API 轮询客户端
-│   ├── tavily_keys.example.py   # API key 配置模板
-│   ├── smart_crawl.py           # 统一爬虫入口（Tavily→Playwright）
-│   └── png_parser.py            # PNG 角色卡导入（Chub/JanitorAI）
-├── docs/
-│   └── card-format.md           # 角色卡格式规范
-├── .gitignore
-├── LICENSE
-└── README.md
-```
+支持的 AI API：
+- **DeepSeek API** — 默认支持
+- **OpenAI API** — 需修改模型名称
+- **其他兼容 OpenAI 格式的 API**
 
 ## 📝 角色卡格式
 
-推荐 YAML（省 token），也支持 JSON：
+支持 YAML 和 JSON 格式：
 
 ```yaml
 name: 角色名
 age: "年龄，性别"
 description: |
-  外貌描写（200-400字，具体到能画出来）
+  外貌描写（200-400字）
 personality: |
   性格描写（表层→深层→矛盾点→对用户态度）
 behavior: |
-  行为模式（具体可观察的行为习惯）
+  行为模式
 speech: |
-  语气/口癖（量化的说话特征）
+  语气/口癖
 likes: 喜好
 dislikes: 厌恶
 backstory: |
-  背景故事（成长弧+关键转折）
+  背景故事
 scenario: |
   当前场景设定（用 {{user}} 和 {{char}} 占位）
 first_mes: |
-  第一条消息（最重要！决定文风）
+  第一条消息（决定文风，最重要）
 mes_example: |
   对话范例
 system_prompt: |
-  心理建模规则（5维模型行为预测）
-```
-
-### 字段优先级
-
-1. `first_mes` — 决定文风、描写密度、叙事节奏（**最重要**）
-2. `personality` — 决定角色行为逻辑
-3. `scenario` — 决定互动起点和关系张力
-4. `system_prompt` — 心理建模规则
-5. `description` — 外貌参考
-
-## 🔧 命令参考
-
-```bash
-# ═══ 角色管理 ═══
-python3 ~/.hermes/characters/character_engine.py load <名称>
-python3 ~/.hermes/characters/character_engine.py unload
-python3 ~/.hermes/characters/character_engine.py status
-
-# ═══ 存档系统（每角色最多3槽位） ═══
-echo "对话摘要" | python3 ~/.hermes/characters/character_engine.py save <角色名> "场景简述"
-python3 ~/.hermes/characters/character_engine.py list [角色名]
-python3 ~/.hermes/characters/character_engine.py resume <角色名> <1|2|3>
-python3 ~/.hermes/characters/character_engine.py delete <角色名> <1|2|3>
-
-# ═══ World Book ═══
-python3 ~/.hermes/characters/worldbook_engine.py list
-python3 ~/.hermes/characters/worldbook_engine.py load <名>
-
-# ═══ PNG 角色卡导入 ═══
-python3 tools/png_parser.py <card.png> --save
-
-# ═══ 角色蒸馏（在仓库目录下执行） ═══
-python3 tools/distill.py "角色名" "作品名"
-python3 tools/distill.py "角色名" "作品名" --type anime --lang zh
+  心理建模规则
 ```
 
 ## 🧠 5维心理建模
 
-每个蒸馏生成的角色都经过心理学理论分析：
-
-| 维度 | 理论来源 | 决定什么 |
+| 维度 | 理论来源 | 决定内容 |
 |------|---------|---------|
 | 依恋模式 | Bowlby/Ainsworth | 面对亲近时推开还是靠近 |
 | 防御机制 | Anna Freud | 受伤时用什么方式保护自己 |
 | 核心图式 | Beck/Young | 用什么滤镜解读世界 |
 | 需求层级 | Maslow | 什么话题能真正触动角色 |
 | 道德推理 | Kohlberg | 做对错判断的底层逻辑 |
-
-心理建模结论写入 `system_prompt` 字段，指导 AI 在对话中的行为预测。
-
-## 🎭 角色卡来源
-
-| 来源 | 获取方式 |
-|------|---------|
-| characterhub.org (Chub) | 下载 PNG → `png_parser.py` 解析 |
-| 云酒馆 | 直接使用 JSON/YAML |
-| 蒸馏生成 | `distill.py` 调研 → Agent 生成 |
-| 手工制作 | 按格式规范编写 YAML |
 
 ## ⚠️ 安全红线
 
@@ -235,8 +145,9 @@ MIT License
 
 ## 👤 作者
 
-[@Lzh-xbccz](https://github.com/Lzh-xbccz)
+**TianYa-DAO**  
+GitHub: [@TianYa-DAO](https://github.com/TianYa-DAO)
 
 ---
 
-> 角色扮演的本质不是模仿说话方式，而是让 AI 理解角色"是谁"——从心理学理论出发，让每次回应都有可追溯的行为逻辑。
+> 沉浸式 AI 角色扮演体验，让每次对话都有可追溯的行为逻辑。
