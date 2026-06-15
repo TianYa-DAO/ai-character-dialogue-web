@@ -17,10 +17,13 @@ MEMORY_PREFIX = "[WB]"
 # ─── 加载 World Book ───
 def load_worldbook(name: str) -> dict:
     """解析WB JSON，返回条目列表"""
+    # 清理 name: 去掉 .json 后缀和 URL 编码
+    clean_name = name.lower().replace(".json", "").strip()
+    
     # 模糊匹配文件名
     wb_path = None
     for f in REFS_DIR.glob("*.json"):
-        if name.lower() in f.stem.lower():
+        if clean_name in f.stem.lower() or clean_name in f.name.lower():
             wb_path = f
             break
     if not wb_path:
@@ -90,14 +93,61 @@ def print_memory_commands(items: list, wb_name: str):
 # ─── 保存/读取挂载状态 ───
 def get_active_wbs() -> list:
     if STATE_FILE.exists():
-        with open(STATE_FILE, "r") as f:
-            return json.load(f)
+        # 尝试 UTF-8，如果失败则尝试 GBK（兼容旧文件）
+        try:
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except UnicodeDecodeError:
+            try:
+                with open(STATE_FILE, "r", encoding="gbk") as f:
+                    return json.load(f)
+            except Exception:
+                return []
     return []
 
 
 def save_active_wbs(wbs: list):
-    with open(STATE_FILE, "w") as f:
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(wbs, f, ensure_ascii=False, indent=2)
+
+
+# ─── API 接口函数 ───
+def list_worldbooks() -> list:
+    """获取可用的世界书列表（供 API 调用）"""
+    result = []
+    if REFS_DIR.exists():
+        for f in sorted(REFS_DIR.glob("*.json")):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    d = json.load(fp)
+                entries = len(d.get("entries", {}))
+                name = d.get("name", f.stem)
+                result.append({
+                    "name": name,
+                    "entries": entries,
+                    "file": f.name
+                })
+            except Exception:
+                result.append({
+                    "name": f.stem,
+                    "entries": 0,
+                    "file": f.name,
+                    "error": "解析失败"
+                })
+    return result
+
+
+def get_active_worldbooks() -> list:
+    """获取已挂载的世界书列表（供 API 调用）"""
+    return get_active_wbs()
+
+
+def unload_worldbook(name: str) -> bool:
+    """卸载世界书（供 API 调用）"""
+    active = get_active_wbs()
+    new_active = [wb for wb in active if name.lower() not in wb["name"].lower()]
+    save_active_wbs(new_active)
+    return len(new_active) != len(active)
 
 
 if __name__ == "__main__":

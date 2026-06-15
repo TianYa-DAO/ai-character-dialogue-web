@@ -4,8 +4,10 @@ Tavily API 轮询查询工具
 自动在多个 key 之间轮询，单个 key 失败自动切换下一个。
 
 配置方法：
-  在同目录下创建 tavily_keys.py，内容为：
-  TAVILY_KEYS = ["tvly-YOUR_KEY_1", "tvly-YOUR_KEY_2", ...]
+  在项目根目录下的 config.json 中配置：
+  "tavily": {
+      "api_keys": ["tvly-YOUR_KEY_1", "tvly-YOUR_KEY_2", ...]
+  }
 
   获取 key: https://tavily.com/ （免费额度 1000次/月/key）
 """
@@ -16,11 +18,31 @@ import urllib.request
 _DIR = os.path.dirname(os.path.abspath(__file__))
 STATE_FILE = os.path.join(_DIR, ".tavily_state.json")
 
-# 加载 keys
-try:
-    from tavily_keys import TAVILY_KEYS
-except ImportError:
-    TAVILY_KEYS = []
+# 从配置文件加载 keys
+def _load_keys():
+    # 优先从环境变量读取
+    env_keys = os.environ.get("TAVILY_API_KEYS")
+    if env_keys:
+        return env_keys.split(",")
+    
+    # 尝试从项目根目录的 config.json 读取
+    config_path = os.path.join(_DIR, "..", "config.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                config = json.load(f)
+                return config.get("tavily", {}).get("api_keys", [])
+        except Exception:
+            pass
+    
+    # 回退到旧的 tavily_keys.py
+    try:
+        from tavily_keys import TAVILY_KEYS
+        return TAVILY_KEYS
+    except ImportError:
+        return []
+
+TAVILY_KEYS = _load_keys()
 
 
 def _check_keys():

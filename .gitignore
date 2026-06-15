@@ -10,3 +10,6 @@ _rp_params_backup.yaml
 .venv/
 tools/tavily_keys.py
 tools/.tavily_state.json
+config.json
+*.pem
+test_stream.py

@@ -1,6 +1,6 @@
-# Hermes Roleplay Engine v4.0
+# 基于HRE的AI人物对话Web可视化
 
-> 基于 Hermes Agent 的沉浸式角色扮演引擎 — 身体一致性锁定 + 情感描写规范 + 心理建模 + 角色蒸馏
+> 基于 Hermes Roleplay Engine 的 AI 角色对话 Web 可视化平台 — 沉浸式角色扮演 + 世界书管理 + 存档系统
 
 一个让 AI 真正"成为"角色的引擎，而非简单的语气模仿。
 

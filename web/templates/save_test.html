@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Minimal Save System Test</title>
+<style>
+  body { background: #1a1a2e; color: #eee; font-family: sans-serif; padding: 20px; }
+  button { background: #4a4a8a; color: white; border: none; padding: 8px 12px; margin: 4px; cursor: pointer; border-radius: 4px; }
+  button:hover { background: #5a5a9a; }
+  .save-item { background: #2a2a4e; padding: 10px; margin: 8px 0; border-radius: 6px; }
+</style>
+</head>
+<body>
+
+<h1>🗂️ 存档系统（极简版）</h1>
+
+<button onclick="loadSaves()">🔄 刷新存档列表</button>
+<button onclick="quickSave()">💾 快速存档</button>
+
+<div id="saveList"></div>
+
+<script>
+let activeCharacter = null;
+
+// Initialize
+async function init() {
+  const r = await fetch('/api/status');
+  const data = await r.json();
+  activeCharacter = data.active;
+  console.log('Active character:', activeCharacter);
+  if (activeCharacter) {
+    loadSaves();
+  }
+}
+
+async function loadSaves() {
+  if (!activeCharacter) {
+    alert('请先加载角色');
+    return;
+  }
+  
+  console.log('Loading saves for:', activeCharacter);
+  const r = await fetch(`/api/saves/${encodeURIComponent(activeCharacter)}`);
+  const data = await r.json();
+  console.log('Saves:', data);
+  
+  const div = document.getElementById('saveList');
+  if (!data.saves || data.saves.length === 0) {
+    div.innerHTML = '<p>暂无存档</p>';
+    return;
+  }
+  
+  div.innerHTML = data.saves.map(s => `
+    <div class="save-item">
+      <strong>槽位 ${s.slot}</strong> - ${s.summary || '(无描述)'}
+      <br><small>${s.created_at || ''}</small>
+      <br>
+      <button onclick="resumeSave(${s.slot})">▶ 恢复</button>
+      <button onclick="exportSave(${s.slot})">📤 导出</button>
+      <button onclick="deleteSave(${s.slot})">🗑️ 删除</button>
+    </div>
+  `).join('');
+}
+
+async function quickSave() {
+  if (!activeCharacter) {
+    alert('请先加载角色');
+    return;
+  }
+  
+  // Get existing saves to find next slot
+  const r = await fetch(`/api/saves/${encodeURIComponent(activeCharacter)}`);
+  const data = await r.json();
+  const existingSlots = (data.saves || []).map(s => s.slot);
+  let slot = 1;
+  while (existingSlots.includes(slot)) slot++;
+  
+  console.log('Saving to slot:', slot);
+  const r2 = await fetch('/api/save', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      character: activeCharacter,
+      summary: '快速存档',
+      slot: slot
+    })
+  });
+  const result = await r2.json();
+  console.log('Save result:', result);
+  alert('存档成功！槽位: ' + slot);
+  loadSaves();
+}
+
+async function resumeSave(slot) {
+  console.log('Resuming slot:', slot);
+  const r = await fetch(`/api/saves/${encodeURIComponent(activeCharacter)}/${slot}/resume`, {
+    method: 'POST'
+  });
+  const data = await r.json();
+  console.log('Resume result:', data);
+  alert('恢复成功！');
+}
+
+async function exportSave(slot) {
+  console.log('Exporting slot:', slot);
+  const r = await fetch(`/api/saves/${encodeURIComponent(activeCharacter)}/${slot}`);
+  const data = await r.json();
+  const blob = new Blob([JSON.stringify(data.save, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `save_${activeCharacter}_slot${slot}.json`;
+  a.click();
+}
+
+async function deleteSave(slot) {
+  if (!confirm('确定删除？')) return;
+  console.log('Deleting slot:', slot);
+  const r = await fetch(`/api/saves/${encodeURIComponent(activeCharacter)}/${slot}`, {
+    method: 'DELETE'
+  });
+  const data = await r.json();
+  console.log('Delete result:', data);
+  loadSaves();
+}
+
+init();
+</script>
+
+</body>
+</html>

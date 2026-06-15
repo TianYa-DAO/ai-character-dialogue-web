@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 角色蒸馏器 — 调研模块 v2.1
 职责：搜索+抓取+视频字幕+保存结构化材料。不生成角色卡。
@@ -27,6 +28,16 @@ import re
 from pathlib import Path
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# ── 强制 UTF-8 编码（Windows 兼容） ──
+if sys.platform == "win32":
+    os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+    os.environ.setdefault("PYTHONUTF8", "1")
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 # ── 依赖加载（容错） ──
 _DIR = os.path.dirname(os.path.abspath(__file__))
@@ -184,9 +195,12 @@ def _tavily_search(query, max_results=5):
 
 def _playwright_search(query):
     try:
+        # Windows 使用 python，Linux/macOS 使用 python3
+        python_cmd = "python" if sys.platform == "win32" else "python3"
         r = subprocess.run(
-            ["python3", SMART_CRAWL, "search", query],
-            capture_output=True, text=True, timeout=45
+            [python_cmd, SMART_CRAWL, "search", query],
+            capture_output=True, text=True, timeout=45,
+            encoding="utf-8", errors="replace"
         )
         if r.returncode == 0 and r.stdout.strip():
             return json.loads(r.stdout).get("results", [])
@@ -226,8 +240,10 @@ def fetch_url(url):
     # smart_crawl（如果存在）
     if os.path.isfile(SMART_CRAWL):
         try:
+            python_cmd = "python" if sys.platform == "win32" else "python3"
             r = subprocess.run(
-                ["python3", SMART_CRAWL, url], capture_output=True, text=True, timeout=60
+                [python_cmd, SMART_CRAWL, url], capture_output=True, text=True, timeout=60,
+                encoding="utf-8", errors="replace"
             )
             if r.returncode == 0 and len(r.stdout.strip()) > 100:
                 return r.stdout.strip()

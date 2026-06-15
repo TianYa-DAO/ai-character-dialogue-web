@@ -213,9 +213,9 @@ def build_soul_md(char_path: Path) -> str:
     # 构建年龄性别行
     meta_parts = []
     if age:
-        meta_parts.append(age)
+        meta_parts.append(str(age))
     if gender:
-        meta_parts.append(gender)
+        meta_parts.append(str(gender))
     meta_line = "，".join(meta_parts) if meta_parts else ""
 
     parts = []
