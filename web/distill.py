@@ -120,7 +120,7 @@ def distill_worker(char_name, work_name, lang, media_type):
         research = run_research(char_name, work_name, lang=lang, media_type=media_type)
         
         distill_status["progress"] = "正在保存调研结果..."
-        save_research(char_name, research)
+        save_research(char_name, work_name, research, media_type)
         
         distill_status["progress"] = "正在生成角色卡..."
         generate_character_card(char_name)
