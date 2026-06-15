@@ -73,7 +73,7 @@ def register_distill_routes(app):
     def api_generate_card():
         """生成角色卡"""
         data = request.json or {}
-        char_name = data.get("name")
+        char_name = data.get("char_name") or data.get("name")
         
         if not char_name:
             return json_resp({"error": "缺少角色名"}, 400)
@@ -125,7 +125,7 @@ def distill_worker(char_name, work_name, lang, media_type):
         distill_status["progress"] = "正在生成角色卡..."
         generate_character_card(char_name)
         
-        distill_status["result"] = {"character": char_name, "work": work_name}
+        distill_status["result"] = {"char_name": char_name, "character": char_name, "work": work_name}
         distill_status["progress"] = "蒸馏完成"
         
     except Exception as e:
