@@ -1152,7 +1152,17 @@ async function loadCharacter(name) {
     const area = document.getElementById('messagesArea');
     if (area) area.innerHTML = '';
 
-    if (r.first_mes) {
+    // 从后端获取完整的消息历史
+    const msgResp = await api('/api/messages').then(r => r.json());
+    const messages = Array.isArray(msgResp) ? msgResp : [];
+    
+    if (messages.length > 0) {
+      // 如果有历史消息，渲染所有消息
+      for (const msg of messages) {
+        addMsg(msg.role, msg.content, msg.time);
+      }
+    } else if (r.first_mes) {
+      // 如果没有历史消息但有 first_mes，显示初始消息
       addMsg('character', r.first_mes);
     }
 
@@ -1198,14 +1208,16 @@ async function sendMessage() {
   const area = document.getElementById('messagesArea');
   const msgDiv = document.createElement('div');
   msgDiv.className = 'message character';
+  // 使用唯一ID避免消息错位
+  const streamId = 'stream-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
   msgDiv.innerHTML = `
     <div class="avatar">🎭</div>
-    <div class="bubble"><span class="streaming-cursor" id="st"></span><span class="msg-time">${now()}</span></div>
+    <div class="bubble"><span class="streaming-cursor" id="${streamId}"></span><span class="msg-time">${now()}</span></div>
   `;
   area.appendChild(msgDiv);
   area.scrollTop = area.scrollHeight;
 
-  const st = document.getElementById('st');
+  const st = document.getElementById(streamId);
   let full = '';
 
   try {
@@ -1292,7 +1304,7 @@ async function sendMessage() {
 /* ═══════════════════════════════════════════════════
    CHAT — ADD MESSAGE
 ═══════════════════════════════════════════════════ */
-function addMsg(role, content) {
+function addMsg(role, content, msgTime) {
   // Parse *action* as italic, "dialogue" as quoted
   const area = document.getElementById('messagesArea');
   const av = role==='user' ? '👤' : '🎭';
@@ -1302,7 +1314,7 @@ function addMsg(role, content) {
     <div class="avatar">${av}</div>
     <div class="bubble">
       ${renderStatusBars(formatContent(content))}
-      <span class="msg-time">${now()}</span>
+      <span class="msg-time">${msgTime || now()}</span>
     </div>
   `;
   area.appendChild(msgDiv);
