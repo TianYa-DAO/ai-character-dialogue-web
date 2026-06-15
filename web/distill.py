@@ -178,7 +178,7 @@ def generate_character_card(char_name: str) -> dict:
     try:
         with open(card_path, "w", encoding="utf-8") as f:
             f.write(card_text)
-        return {"success": True, "path": str(card_path), "character": char_name}
+        return {"success": True, "path": str(card_path), "character": char_name, "size": len(card_text), "template": False}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
