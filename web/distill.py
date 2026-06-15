@@ -123,10 +123,14 @@ def distill_worker(char_name, work_name, lang, media_type):
         save_research(char_name, work_name, research, media_type)
         
         distill_status["progress"] = "正在生成角色卡..."
-        generate_character_card(char_name)
+        card_result = generate_character_card(char_name)
         
-        distill_status["result"] = {"char_name": char_name, "character": char_name, "work": work_name}
-        distill_status["progress"] = "蒸馏完成"
+        if card_result.get("success"):
+            distill_status["result"] = {"char_name": char_name, "character": char_name, "work": work_name, "card_generated": True, "card_path": card_result.get("path"), "card_size": len(card_result.get("path", ""))}
+            distill_status["progress"] = "蒸馏完成"
+        else:
+            distill_status["result"] = {"char_name": char_name, "character": char_name, "work": work_name, "card_error": card_result.get("error", "未知错误")}
+            distill_status["progress"] = "蒸馏完成（角色卡生成失败）"
         
     except Exception as e:
         distill_status["error"] = str(e)
