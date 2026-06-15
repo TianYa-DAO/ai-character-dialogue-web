@@ -52,7 +52,8 @@ def get_character_detail(name: str) -> dict:
         if f.suffix.lower() in (".yaml", ".yml", ".json") and not f.name.startswith("_"):
             data = parse_character_card(f)
             card_name = data.get("name", "")
-            if card_name == name or f.stem == name:
+            # 先尝试文件名匹配（处理编码问题），再尝试name字段匹配
+            if f.stem == name or card_name == name:
                 return {"success": True, "data": data, "file": f.name}
     return {"success": False, "error": f"角色 '{name}' 未找到"}
 
