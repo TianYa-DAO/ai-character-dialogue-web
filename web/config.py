@@ -20,7 +20,7 @@ def load_config():
             "model": "deepseek-chat"
         },
         "tavily": {
-            "api_key": ""
+            "api_keys": []  # 统一使用列表格式，支持多个API Key
         },
         "auto_save": {
             "enabled": True,
@@ -106,8 +106,10 @@ except ImportError as e:
 # ── Tavily 搜索集成 ──
 HAS_TAVILY = False
 try:
-    from tavily_client import tavily_search
-    HAS_TAVILY = True
+    from tavily_client import tavily_search, TAVILY_KEYS
+    # 同时检查模块是否导入成功 AND API Key 是否配置
+    if TAVILY_KEYS and len(TAVILY_KEYS) > 0:
+        HAS_TAVILY = True
 except (ImportError, RuntimeError):
     pass
 
@@ -117,7 +119,12 @@ DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL") or CONFIG["deepseek"]["b
 DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL") or CONFIG["deepseek"]["model"] or "deepseek-chat"
 
 # ── Tavily 配置 ──
-TAVILY_API_KEYS = CONFIG["tavily"].get("api_keys", [])
+# 兼容 api_keys（列表）和 api_key（单字符串）两种格式
+_tavily_keys = CONFIG["tavily"].get("api_keys", CONFIG["tavily"].get("api_key", ""))
+if isinstance(_tavily_keys, str) and _tavily_keys:
+    TAVILY_API_KEYS = [_tavily_keys]
+else:
+    TAVILY_API_KEYS = _tavily_keys or []
 
 # ── 会话自动保存配置 ──
 AUTO_SAVE_ENABLED = os.environ.get("AUTO_SAVE_ENABLED") == "true" if os.environ.get("AUTO_SAVE_ENABLED") else CONFIG["auto_save"]["enabled"]

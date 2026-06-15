@@ -235,7 +235,8 @@ def register_misc_routes(app):
     @app.route("/api/tavily/status", methods=["GET"])
     def api_tavily_status():
         """Tavily 状态"""
-        return json_resp({"enabled": HAS_TAVILY})
+        # 返回 available 字段以匹配前端期望
+        return json_resp({"available": HAS_TAVILY})
     
     @app.route("/api/soul", methods=["GET"])
     def api_get_soul():

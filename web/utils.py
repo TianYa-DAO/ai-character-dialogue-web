@@ -59,10 +59,19 @@ def get_character_detail(name: str) -> dict:
 
 def build_soul_from_engine(char_name: str) -> str:
     """从角色引擎构建 SOUL.md 内容"""
-    if SOUL_PATH.exists():
-        with open(SOUL_PATH, "r", encoding="utf-8") as f:
-            return f.read()
+    # 如果角色引擎已加载，调用引擎重新生成 SOUL.md（确保角色切换生效）
+    if MODULES_LOADED:
+        try:
+            import character_engine
+            result = character_engine.load_character(char_name)
+            if result.get("success"):
+                if SOUL_PATH.exists():
+                    with open(SOUL_PATH, "r", encoding="utf-8") as f:
+                        return f.read()
+        except Exception as e:
+            print(f"[utils] 角色引擎调用失败: {e}")
     
+    # 备用方案：直接从角色卡构建
     result = get_character_detail(char_name)
     if result["success"]:
         data = result["data"]

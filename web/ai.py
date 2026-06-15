@@ -8,13 +8,21 @@ import urllib.error
 
 from .config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, HAS_TAVILY
 
+# 延迟导入 Tavily（仅在需要时）
+_tavily_search = None
+if HAS_TAVILY:
+    try:
+        from tavily_client import tavily_search as _tavily_search
+    except ImportError:
+        pass
+
 def _tavily_context(query: str, max_results: int = 3) -> str:
     """用 Tavily 搜索上下文，失败返回空字符串"""
-    if not HAS_TAVILY:
+    if not _tavily_search:
         return ""
     try:
         import re as _re
-        result = tavily_search(query, max_results=max_results, include_answer=True)
+        result = _tavily_search(query, max_results=max_results, include_answer=True)
         if not result:
             return ""
         answer = result.get("answer", "")
