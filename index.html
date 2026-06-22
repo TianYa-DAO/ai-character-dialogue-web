@@ -1,141 +1,2077 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI人物对话Web可视化平台</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 800px;
-            width: 100%;
-            padding: 40px;
-            text-align: center;
-        }
-        
-        h1 {
-            color: #667eea;
-            margin-bottom: 20px;
-            font-size: 2.5em;
-        }
-        
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 1.2em;
-            line-height: 1.6;
-        }
-        
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin: 30px 0;
-        }
-        
-        .feature {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            transition: transform 0.3s;
-        }
-        
-        .feature:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .feature h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        
-        .feature p {
-            color: #666;
-            font-size: 0.9em;
-        }
-        
-        .cta-button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.1em;
-            cursor: pointer;
-            margin-top: 30px;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .cta-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
-        }
-        
-        .repo-link {
-            margin-top: 20px;
-            color: #667eea;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        
-        .repo-link:hover {
-            text-decoration: underline;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI人物对话Web可视化</title>
+<style>
+/* ═══════════════════════════════════════════════════
+   CSS VARIABLES & RESET
+═══════════════════════════════════════════════════ */
+:root {
+  --bg-primary: #0d0d1a;
+  --bg-secondary: #131328;
+  --bg-tertiary: #191936;
+  --bg-card: #1e1e3a;
+  --bg-hover: #252550;
+  --border: #2a2a55;
+  --text-primary: #e0e0f0;
+  --text-secondary: #8888aa;
+  --text-muted: #555570;
+  --accent: #7c5cbf;
+  --accent-light: #9b7ed8;
+  --accent-dark: #5a3d99;
+  --accent-glow: rgba(124,92,191,0.3);
+  --user-bubble: #1a2a4a;
+  --char-bubble: #2a1a3a;
+  --success: #4caf50;
+  --warning: #ff9800;
+  --error: #f44336;
+  --info: #29b6f6;
+  --sidebar-w: 260px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════════ */
+.app-container { display:flex; height:100vh; }
+
+/* ═══════════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════════ */
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.25s ease, min-width 0.25s ease;
+  overflow: hidden;
+  z-index: 10;
+}
+.sidebar.collapsed { width: 64px; min-width: 64px; }
+
+.sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.sidebar-header .logo {
+  font-size: 22px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sidebar-header h1 {
+  font-size: 14px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-light), #c0a0ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.sidebar.collapsed .sidebar-header h1,
+.sidebar.collapsed .sidebar-header .subtitle { display:none; }
+.sidebar-header .subtitle {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* ── Nav ── */
+.nav-list {
+  list-style: none;
+  padding: 8px 8px;
+  flex-shrink: 0;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  margin-bottom: 2px;
+  border: 1px solid transparent;
+}
+.nav-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.nav-item.active {
+  background: var(--bg-card);
+  border-color: var(--accent);
+  color: var(--accent-light);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+.nav-item .nav-icon { font-size: 16px; min-width: 20px; text-align: center; flex-shrink: 0; }
+.nav-item .nav-label { overflow: hidden; text-overflow: ellipsis; }
+.sidebar.collapsed .nav-item { justify-content: center; padding: 10px; }
+.sidebar.collapsed .nav-label { display:none; }
+.sidebar.collapsed .nav-item .nav-icon { font-size: 18px; }
+
+.nav-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 12px;
+}
+
+/* ── Sidebar bottom ── */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sidebar.collapsed .sidebar-footer { justify-content: center; padding: 12px 8px; }
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  background: var(--text-muted);
+}
+.status-dot.connected { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.status-dot.error { background: var(--error); }
+.footer-text {
+  font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden;
+}
+.sidebar.collapsed .footer-text { display:none; }
+
+.collapse-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 16px; padding: 4px;
+  border-radius: 6px; transition: all 0.15s; flex-shrink: 0;
+}
+.collapse-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.sidebar.collapsed .collapse-btn { margin: 0 auto; }
+
+/* ═══════════════════════════════════════════════════
+   MAIN CONTENT AREA
+═══════════════════════════════════════════════════ */
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.panel {
+  display: none;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+.panel.active { display: flex; }
+
+/* ═══════════════════════════════════════════════════
+   CHAT PANEL
+═══════════════════════════════════════════════════ */
+.chat-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+.char-info { display: flex; align-items: center; gap: 12px; }
+.char-avatar {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--char-bubble), var(--accent));
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.char-name { font-size: 15px; font-weight: 600; }
+.char-status { font-size: 11px; color: var(--text-muted); }
+.header-actions { display: flex; gap: 6px; }
+.hdr-btn {
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text-secondary); border-radius: 8px;
+  padding: 6px 12px; font-size: 12px; cursor: pointer;
+  transition: all 0.15s; display: flex; align-items: center; gap: 5px;
+}
+.hdr-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--accent); }
+
+/* Messages */
+.messages-area {
+  flex: 1; overflow-y: auto; padding: 20px;
+  display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth;
+}
+.message { display:flex; gap: 10px; max-width: 78%; animation: fadeIn 0.3s ease; margin-bottom: 8px; }
+.message.user { align-self: flex-end; flex-direction: row-reverse; }
+.message.character { align-self: flex-start; }
+.message .avatar {
+  width: 34px; height: 34px; min-width: 34px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center; font-size: 15px;
+  flex-shrink: 0;
+}
+.message.user .avatar { background: linear-gradient(135deg, #1a3a5a, #2a5a8a); }
+.message.character .avatar { background: linear-gradient(135deg, var(--char-bubble), var(--accent)); }
+.message .bubble {
+  padding: 10px 14px; border-radius: 14px; line-height: 1.75; font-size: 14px;
+  word-break: break-word;
+}
+.message.user .bubble {
+  background: var(--user-bubble);
+  border-bottom-right-radius: 4px;
+}
+.message.character .bubble {
+  background: var(--char-bubble);
+  border-bottom-left-radius: 4px;
+}
+.msg-time { font-size: 10px; color: var(--text-muted); margin-top: 4px; display: block; }
+.message.user .msg-time { text-align: right; }
+
+/* Status bar in messages */
+.status-bar {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--bg-primary); border: 1px solid var(--border);
+  border-radius: 20px; padding: 2px 10px 2px 6px;
+  font-size: 11px; margin-top: 4px;
+}
+.status-bar .sb-icon { font-size: 12px; }
+.status-bar .sb-label { color: var(--text-secondary); }
+.status-bar .sb-value { font-weight: 600; }
+.status-bar-row { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* Action / narration */
+.action-text { font-style: italic; color: var(--accent-light); opacity: 0.85; }
+
+/* Quote / dialogue */
+.dialogue-text { border-left: 3px solid var(--accent); padding-left: 10px; margin: 4px 0; }
+
+/* Streaming cursor */
+.streaming-cursor::after {
+  content: '▊'; animation: blink 0.8s infinite; color: var(--accent-light);
+}
+@keyframes blink { 0%,50%{opacity:1;} 51%,100%{opacity:0;} }
+
+/* System message */
+.sys-msg {
+  text-align: center; font-size: 12px; color: var(--text-muted);
+  padding: 6px 16px; margin: 4px 0;
+}
+.sys-msg .badge {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 3px 12px; display: inline-block;
+}
+
+/* Empty state */
+.empty-state {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px;
+  color: var(--text-muted);
+}
+.empty-state .es-icon { font-size: 60px; opacity: 0.25; }
+.empty-state h2 { font-size: 17px; color: var(--text-secondary); }
+.empty-state p { font-size: 13px; max-width: 280px; text-align: center; line-height: 1.6; }
+
+/* Input area */
+.input-area {
+  padding: 14px 20px; border-top: 1px solid var(--border);
+  background: var(--bg-secondary); flex-shrink: 0;
+}
+.input-wrapper { display:flex; gap: 10px; align-items: flex-end; }
+.input-wrapper textarea {
+  flex: 1; background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px 14px; color: var(--text-primary);
+  font-size: 14px; font-family: inherit; resize: none;
+  min-height: 42px; max-height: 140px; line-height: 1.5;
+  transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+}
+.input-wrapper textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+.input-wrapper textarea::placeholder { color: var(--text-muted); }
+.send-btn {
+  width: 42px; height: 42px; min-width: 42px; border-radius: 12px;
+  background: var(--accent); border: none; color: white;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; font-size: 17px;
+}
+.send-btn:hover:not(:disabled) { background: var(--accent-light); transform: scale(1.05); }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ═══════════════════════════════════════════════════
+   CHARACTER MANAGER PANEL
+═══════════════════════════════════════════════════ */
+.panel-header {
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg-secondary); flex-shrink: 0;
+}
+.panel-header h2 { font-size: 15px; font-weight: 600; }
+.panel-header .actions { display: flex; gap: 6px; }
+.btn {
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text-secondary); border-radius: 8px;
+  padding: 7px 14px; font-size: 12px; cursor: pointer;
+  transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px;
+}
+.btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+.btn.primary:hover { background: var(--accent-light); border-color: var(--accent-light); }
+.btn.danger { border-color: #5a2a2a; color: #ff6b6b; }
+.btn.danger:hover { background: rgba(244,67,54,0.1); border-color: var(--error); }
+.btn.small { padding: 4px 10px; font-size: 11px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.panel-body {
+  flex: 1; overflow-y: auto; padding: 16px 20px;
+}
+
+.char-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.char-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px;
+  cursor: pointer; transition: all 0.2s; position: relative;
+}
+.char-card:hover {
+  background: var(--bg-hover); border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.char-card.loaded {
+  border-color: var(--accent);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+.char-card.loaded::before {
+  content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 50%; background: var(--accent);
+  border-radius: 0 3px 3px 0;
+}
+.char-card .cc-name { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+.char-card .cc-age { font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
+.char-card .cc-desc {
+  font-size: 12px; color: var(--text-muted); line-height: 1.5;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; margin-bottom: 8px;
+}
+.char-card .cc-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.tag-chip {
+  background: var(--bg-tertiary); border: 1px solid var(--border);
+  border-radius: 6px; padding: 2px 8px; font-size: 10px; color: var(--text-secondary);
+}
+.char-card .cc-actions {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px;
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  z-index: 200; align-items: center; justify-content: center;
+  backdrop-filter: blur(3px);
+}
+.modal-overlay.visible { display: flex; }
+.modal {
+  background: var(--bg-secondary); border: 1px solid var(--border);
+  border-radius: 14px; width: 90%; max-width: 560px; max-height: 85vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.modal-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.modal-header h3 { font-size: 15px; font-weight: 600; }
+.modal-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 20px; line-height: 1;
+  border-radius: 6px; padding: 2px 6px;
+}
+.modal-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+.modal-body {
+  flex: 1; overflow-y: auto; padding: 16px 20px;
+}
+.modal-footer {
+  padding: 12px 20px; border-top: 1px solid var(--border);
+  display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0;
+}
+
+.form-group { margin-bottom: 12px; }
+.form-group label {
+  display: block; font-size: 11px; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px;
+}
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%; background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 12px; color: var(--text-primary);
+  font-size: 13px; font-family: inherit; outline: none;
+  transition: border-color 0.2s;
+}
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus { border-color: var(--accent); }
+.form-group textarea { resize: vertical; min-height: 70px; }
+.form-hint { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+
+/* ═══════════════════════════════════════════════════
+   SAVE SLOTS
+═══════════════════════════════════════════════════ */
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.slot-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px;
+  transition: all 0.15s; position: relative;
+}
+.slot-card.empty { border-style: dashed; opacity: 0.6; }
+.slot-card.filled { border-color: var(--accent); }
+.slot-num {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text-muted); margin-bottom: 6px;
+}
+.slot-summary {
+  font-size: 13px; color: var(--text-secondary); line-height: 1.5;
+  margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.slot-date { font-size: 10px; color: var(--text-muted); margin-bottom: 8px; }
+.slot-actions { display: flex; gap: 6px; }
+
+/* ═══════════════════════════════════════════════════
+   WORLD BOOK
+═══════════════════════════════════════════════════ */
+.wb-section { margin-bottom: 24px; }
+.wb-section h3 {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--accent-light); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+.wb-list { display: flex; flex-direction: column; gap: 6px; }
+.wb-item {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: all 0.15s;
+}
+.wb-item:hover { background: var(--bg-hover); border-color: var(--accent); }
+.wb-item .wb-name { font-size: 13px; font-weight: 500; }
+.wb-item .wb-actions { display: flex; gap: 6px; }
+.wb-empty { text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px; }
+
+/* ═══════════════════════════════════════════════════
+   DISTILL PANEL
+═══════════════════════════════════════════════════ */
+.distill-form {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px; margin-bottom: 16px;
+}
+.distill-form h3 { font-size: 14px; margin-bottom: 14px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.distill-log {
+  background: var(--bg-primary); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px; font-size: 12px;
+  line-height: 1.8; max-height: 400px; overflow-y: auto;
+  font-family: 'Consolas', 'Microsoft YaHei', monospace;
+}
+.log-line { margin-bottom: 2px; }
+.log-line .log-ts { color: var(--text-muted); margin-right: 8px; }
+.log-line.info { color: var(--info); }
+.log-line.success { color: var(--success); }
+.log-line.warn { color: var(--warning); }
+.log-line.error { color: var(--error); }
+
+/* ═══════════════════════════════════════════════════
+   SETTINGS PANEL
+═══════════════════════════════════════════════════ */
+.settings-section {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px; margin-bottom: 14px;
+}
+.settings-section h3 {
+  font-size: 13px; font-weight: 600; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 6px;
+}
+.engine-status {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px; margin-bottom: 12px;
+}
+.eng-stat {
+  background: var(--bg-tertiary); border-radius: 8px; padding: 10px 12px;
+}
+.eng-stat .es-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); }
+.eng-stat .es-value { font-size: 14px; font-weight: 600; color: var(--accent-light); margin-top: 2px; }
+.soul-preview {
+  background: var(--bg-primary); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px; font-size: 12px; line-height: 1.7;
+  max-height: 200px; overflow-y: auto; white-space: pre-wrap;
+  color: var(--text-secondary);
+}
+
+/* ═══════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+═══════════════════════════════════════════════════ */
+.toast-container {
+  position: fixed; bottom: 20px; right: 20px; z-index: 999;
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 16px;
+  font-size: 13px; display: flex; align-items: center; gap: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+  pointer-events: auto; min-width: 220px; max-width: 360px;
+}
+.toast.success { border-color: var(--success); }
+.toast.error { border-color: var(--error); }
+.toast.warn { border-color: var(--warning); }
+.toast.info { border-color: var(--info); }
+.toast .t-icon { font-size: 16px; flex-shrink: 0; }
+.toast .t-msg { flex: 1; }
+@keyframes slideIn {
+  from { opacity:0; transform:translateX(30px); }
+  to { opacity:1; transform:translateX(0); }
+}
+@keyframes fadeOut {
+  from { opacity:1; }
+  to { opacity:0; }
+}
+
+/* ═══════════════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .sidebar { position: fixed; left: 0; top: 0; height: 100vh; transform: translateX(-100%); }
+  .sidebar.mobile-open { transform: translateX(0); }
+  .message { max-width: 92%; }
+  .char-grid { grid-template-columns: 1fr; }
+  .slots-grid { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .engine-status { grid-template-columns: 1fr 1fr; }
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>🤖 AI人物对话Web可视化平台</h1>
-        <p class="subtitle">
-            基于 Hermes Roleplay Engine 的沉浸式 AI 角色对话 Web 可视化平台<br>
-            让每次对话都有可追溯的行为逻辑
-        </p>
-        
-        <div class="features">
-            <div class="feature">
-                <h3>🎭 角色扮演</h3>
-                <p>5维心理建模，让AI真正"成为"角色</p>
-            </div>
-            <div class="feature">
-                <h3>💬 实时对话</h3>
-                <p>SSE实时消息推送，流畅的对话体验</p>
-            </div>
-            <div class="feature">
-                <h3>📚 世界书</h3>
-                <p>关键词触发式描写规范注入</p>
-            </div>
-            <div class="feature">
-                <h3>💾 存档系统</h3>
-                <p>每角色3槽位，支持手动/自动存档</p>
-            </div>
-        </div>
-        
-        <button class="cta-button" onclick="window.open('https://github.com/TianYa-DAO/aichat', '_blank')">
-            查看项目源码
-        </button>
-        
-        <p class="repo-link">
-            GitHub: <a href="https://github.com/TianYa-DAO/aichat" target="_blank">TianYa-DAO/aichat</a>
-        </p>
+
+<div class="app-container">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">🎭</div>
+      <div>
+        <h1>AI人物对话</h1>
+        <div class="subtitle">角色扮演引擎 · DeepSeek</div>
+      </div>
     </div>
+
+    <ul class="nav-list">
+      <li class="nav-item active" data-panel="chat" onclick="switchPanel('chat')">
+        <span class="nav-icon">💬</span><span class="nav-label">对话</span>
+      </li>
+      <li class="nav-item" data-panel="characters" onclick="switchPanel('characters')">
+        <span class="nav-icon">📋</span><span class="nav-label">角色管理</span>
+      </li>
+      <li class="nav-item" data-panel="saves" onclick="switchPanel('saves')">
+        <span class="nav-icon">💾</span><span class="nav-label">存档系统</span>
+      </li>
+      <li class="nav-item" data-panel="worldbook" onclick="switchPanel('worldbook')">
+        <span class="nav-icon">📖</span><span class="nav-label">World Book</span>
+      </li>
+      <li class="nav-item" data-panel="distill" onclick="switchPanel('distill')">
+        <span class="nav-icon">🧪</span><span class="nav-label">角色蒸馏</span>
+      </li>
+      <li class="nav-item" data-panel="pngimport" onclick="switchPanel('pngimport')">
+        <span class="nav-icon">📥</span><span class="nav-label">PNG 导入</span>
+      </li>
+      <div class="nav-divider"></div>
+      <li class="nav-item" data-panel="settings" onclick="switchPanel('settings')">
+        <span class="nav-icon">⚙️</span><span class="nav-label">设置</span>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <span class="status-dot" id="connDot"></span>
+      <span class="footer-text" id="connText">已连接</span>
+      <span class="status-dot" id="tavilyDot" style="margin-left:6px;"></span>
+      <span class="footer-text" id="tavilyText" style="font-size:10px;">Tavily</span>
+      <button class="collapse-btn" onclick="toggleSidebar()" title="折叠">◀</button>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main-area">
+
+    <!-- ──── 1. CHAT PANEL ──── -->
+    <div class="panel active" id="panel-chat">
+      <div class="chat-header" id="chatHeader" style="display:none;">
+        <div class="char-info">
+          <div class="char-avatar" id="charAvatar">🎭</div>
+          <div>
+            <div class="char-name" id="charName">—</div>
+            <div class="char-status" id="charStatusText">等待加载角色...</div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="hdr-btn" onclick="quickSave()">💾 存档</button>
+          <button class="hdr-btn" onclick="doClearMessages()">🗑️ 清空</button>
+          <button class="hdr-btn" onclick="toggleLogPanel()" style="font-size:11px;">📋 日志</button>
+        </div>
+      </div>
+
+      <div class="messages-area" id="messagesArea">
+        <div class="empty-state" id="emptyState">
+          <div class="es-icon">🎭</div>
+          <h2>AI人物对话Web可视化</h2>
+          <p>从「角色管理」选择一个角色开始对话。<br>AI 会基于角色心理建模，真正"成为"角色。</p>
+          <button class="btn primary" onclick="switchPanel('characters')">📋 前往角色管理</button>
+        </div>
+      </div>
+
+      <div class="input-area" id="inputArea" style="display:none;">
+        <div class="input-wrapper">
+          <textarea id="messageInput" placeholder="输入消息... (Enter 发送，/fix 或 /status 自动识别)"
+            rows="1" onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──── 2. CHARACTERS PANEL ──── -->
+    <div class="panel" id="panel-characters">
+      <div class="panel-header">
+        <h2>📋 角色管理</h2>
+        <div class="actions">
+          <button class="btn primary" onclick="openCreateModal()">+ 新建角色</button>
+          <button class="btn" onclick="loadCharacterList()">🔄 刷新</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="char-grid" id="charGrid"></div>
+      </div>
+    </div>
+
+    <!-- ──── 3. SAVES PANEL ──── -->
+    <div class="panel" id="panel-saves">
+      <div class="panel-header">
+        <h2>💾 存档系统</h2>
+        <div class="actions">
+          <button class="btn primary" id="saveNowBtn" onclick="quickSave()" disabled>💾 快速存档</button>
+          <button class="btn" onclick="loadSaveSlots()">🔄 刷新列表</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div id="noActiveChar" class="wb-empty">请先在「对话」或「角色管理」中加载一个角色</div>
+        <div class="wb-section" id="activeCharSection" style="display:none;">
+          <h3>📌 当前角色存档</h3>
+          <div class="slots-grid" id="activeCharSaves"></div>
+        </div>
+        <div class="wb-section">
+          <h3>📁 所有角色存档</h3>
+          <div id="allSaves"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──── 4. WORLD BOOK PANEL ──── -->
+    <div class="panel" id="panel-worldbook">
+      <div class="panel-header">
+        <h2>📖 World Book</h2>
+        <div class="actions">
+          <button class="btn" onclick="loadWorldBooks()">🔄 刷新</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="wb-section">
+          <h3>✅ 已挂载</h3>
+          <div class="wb-list" id="wbLoaded"></div>
+          <div class="wb-empty" id="wbEmpty">暂无挂载的世界书</div>
+        </div>
+        <div class="wb-section">
+          <h3>📦 可用世界书</h3>
+          <div class="wb-list" id="wbAvailable"></div>
+          <div class="wb-empty" id="wbAvailEmpty">暂无可用世界书</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──── 5. DISTILL PANEL ──── -->
+    <div class="panel" id="panel-distill">
+      <div class="panel-header">
+        <h2>🧪 角色蒸馏</h2>
+      </div>
+      <div class="panel-body">
+        <div class="distill-form">
+          <h3>🔍 调研新角色</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>角色名</label>
+              <input type="text" id="distillName" placeholder="如：托奇">
+            </div>
+            <div class="form-group">
+              <label>作品名</label>
+              <input type="text" id="distillWork" placeholder="如：崩坏星穹铁道">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>类型</label>
+              <select id="distillType">
+                <option value="auto">自动检测</option>
+                <option value="game">游戏</option>
+                <option value="anime">动画</option>
+                <option value="novel">小说</option>
+                <option value="film">影视</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>语言</label>
+              <select id="distillLang">
+                <option value="zh">中文</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn primary" id="distillBtn" onclick="startDistill()">🚀 开始蒸馏</button>
+        </div>
+
+        <!-- 已有调研角色 -->
+        <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin:16px 0 8px;">
+          📋 已有调研
+        </h3>
+        <div id="researchList" style="margin-bottom:8px;">
+          <div style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px;">点击蒸馏标签自动加载...</div>
+        </div>
+
+        <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:8px;">
+          📜 蒸馏日志
+        </h3>
+        <div class="distill-log" id="distillLog">
+          <div class="log-line"><span class="log-ts">[--:--:--]</span> 等待开始...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──── 6. PNG IMPORT PANEL ──── -->
+    <div class="panel" id="panel-pngimport">
+      <div class="panel-header">
+        <h2>📥 PNG 角色卡导入</h2>
+      </div>
+      <div class="panel-body">
+        <div class="distill-form">
+          <h3>📤 上传 PNG 文件</h3>
+          <div class="form-group">
+            <label>PNG 文件</label>
+            <input type="file" id="pngFileInput" accept="image/png" style="background:var(--bg-tertiary);padding:6px;">
+            <div class="form-hint">支持 SillyTavern 导出的 PNG 角色卡（含嵌入 JSON 数据）</div>
+          </div>
+          <button class="btn primary" onclick="uploadPng()">📤 解析并预览</button>
+        </div>
+        <div id="pngPreview" style="display:none;">
+          <h3 style="font-size:13px;font-weight:600;margin-bottom:12px;">🔍 解析预览</h3>
+          <div id="pngPreviewContent"></div>
+          <div style="margin-top:12px;display:flex;gap:8px;">
+            <button class="btn primary" onclick="confirmPngImport()">✅ 确认导入</button>
+            <button class="btn" onclick="cancelPngImport()">❌ 取消</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──── 7. SETTINGS PANEL ──── -->
+    <div class="panel" id="panel-settings">
+      <div class="panel-header">
+        <h2>⚙️ 设置</h2>
+      </div>
+      <div class="panel-body">
+        <div class="settings-section">
+          <h3>🔑 API 配置</h3>
+          <div class="form-group">
+            <label>DeepSeek API Key</label>
+            <input type="password" id="apiKeyInput" placeholder="sk-...">
+          </div>
+          <div class="form-group">
+            <label>模型</label>
+            <select id="modelSelect">
+              <option value="deepseek-chat">deepseek-chat (快速)</option>
+              <option value="deepseek-reasoner">deepseek-reasoner (推理)</option>
+            </select>
+          </div>
+          <button class="btn primary" onclick="saveConfig()">💾 保存配置</button>
+        </div>
+
+        <div class="settings-section">
+          <h3>📊 引擎状态</h3>
+          <div class="engine-status" id="engineStatus"></div>
+        </div>
+
+        <div class="settings-section">
+          <h3>🧠 SOUL.md 预览</h3>
+          <div class="soul-preview" id="soulPreview">加载中...</div>
+        </div>
+
+        <div class="settings-section">
+          <h3>🔍 调试面板（实时数据）</h3>
+          <button class="btn" onclick="toggleDebug()" style="margin-bottom:8px">展开/收起调试</button>
+          <div id="debugPanel" style="display:none">
+            <details open><summary style="cursor:pointer;color:var(--accent);margin-bottom:4px"><b>📤 发送给模型的 System Prompt</b></summary>
+            <pre id="debugSystemPrompt" style="max-height:200px;overflow:auto;background:#1a1a2e;padding:8px;border-radius:6px;font-size:11px;white-space:pre-wrap;word-break:break-all"></pre></details>
+            <details open style="margin-top:6px"><summary style="cursor:pointer;color:var(--accent);margin-bottom:4px"><b>📤 发送的 Messages</b></summary>
+            <pre id="debugMessages" style="max-height:200px;overflow:auto;background:#1a1a2e;padding:8px;border-radius:6px;font-size:11px;white-space:pre-wrap;word-break:break-all"></pre></details>
+            <details open style="margin-top:6px"><summary style="cursor:pointer;color:var(--accent);margin-bottom:4px"><b>📥 模型原始返回</b></summary>
+            <pre id="debugResponse" style="max-height:300px;overflow:auto;background:#0d1117;padding:8px;border-radius:6px;font-size:11px;white-space:pre-wrap;word-break:break-all;color:#58a6ff"></pre></details>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-area -->
+</div><!-- /app-container -->
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Create / Edit Character Modal -->
+<div class="modal-overlay" id="charModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="charModalTitle">新建角色卡</h3>
+      <button class="modal-close" onclick="closeCharModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>角色名 *</label>
+          <input type="text" id="f-name" placeholder="如：托奇">
+        </div>
+        <div class="form-group">
+          <label>年龄</label>
+          <input type="text" id="f-age" placeholder="如：16岁，女">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>外貌描写 *</label>
+        <textarea id="f-description" placeholder="200-400字，具体到能画出来的程度..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>性格 *</label>
+        <textarea id="f-personality" placeholder="表层→深层→矛盾点..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>行为模式</label>
+        <textarea id="f-behavior" placeholder="具体可观察的行为习惯..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>语言特征 *</label>
+        <textarea id="f-speech" placeholder="语气/口癖/说话方式..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>喜好</label>
+          <textarea id="f-likes" placeholder="顿号分隔"></textarea>
+        </div>
+        <div class="form-group">
+          <label>厌恶</label>
+          <textarea id="f-dislikes" placeholder="顿号分隔"></textarea>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>背景故事</label>
+        <textarea id="f-backstory" placeholder="200-400字..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>场景设定 *</label>
+        <textarea id="f-scenario" placeholder="用 {{user}} 和 {{char}} 占位..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>第一条消息 *</label>
+        <textarea id="f-first_mes" placeholder="用 *星号* 写动作，用 &quot;引号&quot; 写对话..."></textarea>
+        <div class="form-hint">最重要字段！决定后续所有回复的文风</div>
+      </div>
+      <div class="form-group">
+        <label>对话范例</label>
+        <textarea id="f-mes_example" placeholder="{{user}}: ...&#10;{{char}}: ..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>心理建模规则</label>
+        <textarea id="f-system_prompt" placeholder="依恋模式、防御机制、核心图式等..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeCharModal()">取消</button>
+      <button class="btn primary" id="charModalSaveBtn" onclick="saveCharFromModal()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save Slot Modal -->
+<div class="modal-overlay" id="saveModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <h3>💾 保存存档</h3>
+      <button class="modal-close" onclick="closeSaveModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>存档摘要</label>
+        <textarea id="saveSummary" placeholder="描述一下这个存档的内容或情境..." rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>槽位</label>
+        <select id="saveSlotSelect">
+          <option value="">自动选择空槽位</option>
+          <option value="1">槽位 1</option>
+          <option value="2">槽位 2</option>
+          <option value="3">槽位 3</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeSaveModal()">取消</button>
+      <button class="btn primary" onclick="confirmSave()">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Character Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="detailModalName">—</h3>
+      <button class="modal-close" onclick="closeDetailModal()">×</button>
+    </div>
+    <div class="modal-body" id="detailModalBody"></div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   GLOBAL STATE
+═══════════════════════════════════════════════════ */
+let activeCharacter = null;
+let characterData   = null;
+let isStreaming      = false;
+let pendingPngData   = null;
+let distillPolling    = null;
+
+/* API基础路径 - 部署在子路径下时修改此项 */
+const API_BASE = '';  // 直接访问 Flask 服务器时为空
+
+/* ═══════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════ */
+function toast(msg, type='info') {
+  const icons = { success:'✅', error:'❌', warn:'⚠️', info:'ℹ️' };
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="t-icon">${icons[type]||'ℹ️'}</span><span class="t-msg">${escHtml(msg)}</span>`;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+/* ═══════════════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════════════ */
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ═══════════════════════════════════════════════════
+   LOG SYSTEM
+═══════════════════════════════════════════════════ */
+const LOG_LEVEL = 'debug'; // debug | info | warn | error
+const LOG_STORAGE_KEY = 'hermes_logs';
+let _logBuf = [];
+
+function hermesLog(level, tag, msg, data) {
+  const entry = { t: Date.now(), level, tag, msg, data: data?JSON.stringify(data):'' };
+  _logBuf.push(entry);
+  if (_logBuf.length > 500) _logBuf.shift();
+  // Also persist to localStorage
+  try { localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(_logBuf.slice(-200))); } catch(e) {}
+  const prefix = `[${new Date().toLocaleTimeString()}] [${level.toUpperCase()}] [${tag}]`;
+  if (level==='error') console.error(prefix, msg, data||'');
+  else if (level==='warn') console.warn(prefix, msg, data||'');
+  else console.log(prefix, msg, data||'');
+}
+
+function getLogs() { return _logBuf; }
+function clearLogs() { _logBuf = []; localStorage.removeItem(LOG_STORAGE_KEY); }
+
+// Load persisted logs on startup
+try {
+  const saved = localStorage.getItem(LOG_STORAGE_KEY);
+  if (saved) _logBuf = JSON.parse(saved);
+} catch(e) {}
+
+function now() {
+  return new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function api(path, opts={}) {
+  return fetch(API_BASE + path, {
+    headers: { 'Content-Type':'application/json', ...(opts.headers||{}) },
+    ...opts
+  });
+}
+
+function apiJson(path, opts={}) {
+  return api(path, opts).then(r => r.json());
+}
+
+/* ═══════════════════════════════════════════════════
+   SIDEBAR NAVIGATION
+═══════════════════════════════════════════════════ */
+function switchPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel-${name}`).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector(`.nav-item[data-panel="${name}"]`).classList.add('active');
+
+  // lazy-load panel data
+  if (name === 'characters') loadCharacterList();
+  if (name === 'saves')     loadSaveSlots();
+  if (name === 'worldbook') loadWorldBooks();
+  if (name === 'settings')  loadSettings();
+  if (name === 'distill')   loadResearchList();
+}
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.classList.toggle('collapsed');
+  const btn = sb.querySelector('.collapse-btn');
+  btn.textContent = sb.classList.contains('collapsed') ? '▶' : '◀';
+}
+
+/* ═══════════════════════════════════════════════════
+   FORMAT MESSAGE CONTENT
+═══════════════════════════════════════════════════ */
+function formatContent(text) {
+  if (!text) return '';
+  // 清理模型输出的乱码符号（包括连续组合）
+  text = text.replace(/[◆◇♦●○■□★☆♠♣♥♢♤♧♡▲▼△▽◀▶►◁▷∗∞§¶†‡©®™°±×÷≠≤≥√∫]/g, '');
+  text = text.replace(/[◆◇♦●○■□★☆]+/g, '');
+  return escHtml(text)
+    .replace(/\n/g,'<br>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/"([^"]+)"/g,'<span class="dialogue-text">"$1"</span>');
+}
+
+/* Render a status bar from ``` blocks */
+function renderStatusBars(html) {
+  return html.replace(
+    /```([\s\S]*?)```/g,
+    function(_, content) {
+      const lines = content.trim().split('\n');
+      const items = lines.map(line => {
+        const [key,...rest] = line.split(':');
+        if (!key) return '';
+        const val = rest.join(':').trim();
+        const icons = {
+          '情绪':'💭','心情':'💭','情绪状态':'💭',
+          '体力':'💪','状态':'📌','当前场景':'🌍',
+          '动作':'✋','行为':'✋','地点':'📍',
+          '穿搭':'👗','身体':'🩺','性欲':'🔥'
+        };
+        const icon = icons[key.trim()] || '📌';
+        // 值中的 <br> 转为空格
+        const cleanVal = val.replace(/<br\s*\/?>/gi, ' ');
+        return `<span class="status-bar"><span class="sb-icon">${icon}</span><span class="sb-label">${escHtml(key.trim())}</span><span class="sb-value">${escHtml(cleanVal)}</span></span>`;
+      }).join(' ');
+      return items ? `<div class="status-bar-row">${items}</div>` : '';
+    }
+  );
+}
+
+/* ═══════════════════════════════════════════════════
+   CHAT — LOAD CHARACTER
+═══════════════════════════════════════════════════ */
+async function loadCharacter(name) {
+  try {
+    const r = await api(`/api/load/${encodeURIComponent(name)}`, {method:'POST'}).then(r=>r.json());
+    if (!r.success) { toast(r.error||'加载失败','error'); return; }
+
+    activeCharacter = name;
+    characterData   = r.data || {};
+
+    const chatHeader = document.getElementById('chatHeader');
+    const inputArea  = document.getElementById('inputArea');
+    const emptyState = document.getElementById('emptyState');
+    const charNameEl = document.getElementById('charName');
+    const charStatusEl = document.getElementById('charStatusText');
+    if (chatHeader) chatHeader.style.display = '';
+    if (inputArea) inputArea.style.display = '';
+    if (emptyState) emptyState.style.display = 'none';
+    if (charNameEl) charNameEl.textContent = name;
+    if (charStatusEl) charStatusEl.textContent = '已加载 · DeepSeek 驱动';
+
+    const area = document.getElementById('messagesArea');
+    if (area) area.innerHTML = '';
+
+    // 从后端获取完整的消息历史
+    const msgResp = await api('/api/messages').then(r => r.json());
+    const messages = Array.isArray(msgResp) ? msgResp : [];
+    
+    if (messages.length > 0) {
+      // 如果有历史消息，渲染所有消息
+      for (const msg of messages) {
+        addMsg(msg.role, msg.content, msg.time);
+      }
+    } else if (r.first_mes) {
+      // 如果没有历史消息但有 first_mes，显示初始消息
+      addMsg('character', r.first_mes);
+    }
+
+    switchPanel('chat');
+    loadCharacterList();
+    toast(`角色「${name}」已加载`,'success');
+  } catch(e) { toast('加载角色失败：'+e.message,'error'); }
+}
+
+/* ═══════════════════════════════════════════════════
+   CHAT — SEND MESSAGE (SSE STREAMING)
+═══════════════════════════════════════════════════ */
+async function sendMessage() {
+  const input = document.getElementById('messageInput');
+  let text = input.value.trim();
+  if (!text || !activeCharacter || isStreaming) return;
+
+  // 发送消息
+  let apiPath = API_BASE + '/api/stream';
+  if (text.startsWith('/status')) {
+    // 显示引擎状态
+    try {
+      const status = await apiJson('/api/status');
+      const engineStatus = await apiJson('/api/engine/status');
+      const msg = `📊 状态信息：\n角色：${status.active || '未加载'}\n消息数：${status.message_count || 0}\n模型：${status.model || '未设置'}\n引擎：${JSON.stringify(engineStatus, null, 2)}`;
+      addMsg('user', text);
+      addMsg('character', msg);
+      input.value = '';
+      isStreaming = false;
+      document.getElementById('sendBtn').disabled = false;
+      return;
+    } catch(e) {
+      hermesLog('error', 'status', 'status command failed', e.message);
+    }
+  }
+
+  addMsg('user', text);
+  input.value = '';
+  autoResize(input);
+  isStreaming = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  const area = document.getElementById('messagesArea');
+  const msgDiv = document.createElement('div');
+  msgDiv.className = 'message character';
+  // 使用唯一ID避免消息错位
+  const streamId = 'stream-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+  msgDiv.innerHTML = `
+    <div class="avatar">🎭</div>
+    <div class="bubble"><span class="streaming-cursor" id="${streamId}"></span><span class="msg-time">${now()}</span></div>
+  `;
+  area.appendChild(msgDiv);
+  area.scrollTop = area.scrollHeight;
+
+  const st = document.getElementById(streamId);
+  let full = '';
+
+  try {
+    const resp = await fetch(apiPath, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message:text})
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      st.textContent = `[错误: ${err.error||'未知错误'}]`;
+      st.className = '';
+      isStreaming = false;
+      document.getElementById('sendBtn').disabled = false;
+      return;
+    }
+
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+
+    // 正确解析 SSE 事件格式
+    let currentEvent = '';
+    while (true) {
+      const {done,value} = await reader.read();
+      if (done) break;
+      buf += dec.decode(value,{stream:true});
+      const lines = buf.split('\n');
+      buf = lines.pop()||'';
+      for (const ln of lines) {
+        // 解析事件名称
+        if (ln.startsWith('event: ')) {
+          currentEvent = ln.replace(/^event:\s*/,'').trim();
+          continue;
+        }
+        // 解析数据
+        if (ln.startsWith('data: ') || ln.startsWith('data:')) {
+          const d = ln.replace(/^data:?\s*/,'').trim();
+          if (d==='[DONE]') break;
+          try {
+            const p = JSON.parse(d);
+            // 根据事件类型处理
+            if (currentEvent === 'debug') {
+              // 调试数据 - 更新调试面板
+              if (p.system_prompt !== undefined) {
+                document.getElementById('debugSystemPrompt').textContent = p.system_prompt.slice(0, 3000);
+                document.getElementById('debugMessages').textContent = JSON.stringify(p.messages, null, 2);
+              }
+            } else if (currentEvent === 'message') {
+              // 消息数据 - 渲染到消息区域
+              if (p.content) {
+                full += p.content;
+                st.innerHTML = renderStatusBars(formatContent(full));
+                area.scrollTop = area.scrollHeight;
+                document.getElementById('debugResponse').textContent = full;
+              }
+            } else if (currentEvent === 'done') {
+              // 结束事件
+              break;
+            }
+          } catch(_) {}
+        }
+        // 空行表示事件结束
+        if (ln.trim() === '') {
+          currentEvent = '';
+        }
+      }
+    }
+
+    st.className = '';
+    st.innerHTML = renderStatusBars(formatContent(full));
+
+  } catch(e) {
+    st.textContent = `[连接错误: ${e.message}]`;
+    st.className = '';
+  }
+
+  isStreaming = false;
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('messageInput').focus();
+}
+
+/* ═══════════════════════════════════════════════════
+   CHAT — ADD MESSAGE
+═══════════════════════════════════════════════════ */
+function addMsg(role, content, msgTime) {
+  // Parse *action* as italic, "dialogue" as quoted
+  const area = document.getElementById('messagesArea');
+  const av = role==='user' ? '👤' : '🎭';
+  const msgDiv = document.createElement('div');
+  msgDiv.className = `message ${role}`;
+  msgDiv.innerHTML = `
+    <div class="avatar">${av}</div>
+    <div class="bubble">
+      ${renderStatusBars(formatContent(content))}
+      <span class="msg-time">${msgTime || now()}</span>
+    </div>
+  `;
+  area.appendChild(msgDiv);
+  area.scrollTop = area.scrollHeight;
+}
+
+/* ═══════════════════════════════════════════════════
+   CHAT — CLEAR
+═══════════════════════════════════════════════════ */
+async function doClearMessages() {
+  if (!confirm('确认清空所有对话？')) return;
+  await api('/api/clear', {method:'POST'});
+  const area = document.getElementById('messagesArea');
+  area.innerHTML = '';
+  if (characterData && characterData.first_mes) {
+    addMsg('character', characterData.first_mes);
+  }
+  toast('对话已清空','info');
+}
+
+/* ═══════════════════════════════════════════════════
+   CHAT — INPUT HELPERS
+═══════════════════════════════════════════════════ */
+function handleKeyDown(e) {
+  if (e.key==='Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+/* ═══════════════════════════════════════════════════
+   CHARACTER LIST (MANAGER PANEL)
+═══════════════════════════════════════════════════ */
+async function loadCharacterList() {
+  try {
+    const chars = await apiJson('/api/characters');
+    const grid = document.getElementById('charGrid');
+    if (!chars || chars.length===0) {
+      grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px;">暂无角色卡<br><small>放入 ~/.hermes/characters/ 或新建角色</small></div>';
+      return;
+    }
+    grid.innerHTML = chars.map(c => `
+      <div class="char-card ${activeCharacter===c.name?'loaded':''}">
+        <div class="cc-name">${escHtml(c.name)}</div>
+        <div class="cc-age">${escHtml(c.age||'')}</div>
+        <div class="cc-desc">${escHtml(c.description||'暂无描述')}</div>
+        <div class="cc-tags">${(c.tags||[]).slice(0,4).map(t=>`<span class="tag-chip">${escHtml(t)}</span>`).join('')}</div>
+        <div class="cc-actions">
+          <button class="btn small primary" onclick="event.stopPropagation();loadCharacter('${escHtml(c.name)}')">💬 对话</button>
+          <button class="btn small" onclick="event.stopPropagation();openEditModal('${escHtml(c.name)}')">✏️ 编辑</button>
+          <button class="btn small" onclick="event.stopPropagation();viewCharDetail('${escHtml(c.name)}')">👁️ 详情</button>
+          <button class="btn small" onclick="event.stopPropagation();unloadChar('${escHtml(c.name)}')">📤 卸载</button>
+          <button class="btn small danger" onclick="event.stopPropagation();deleteChar('${escHtml(c.name)}')">🗑️ 删除</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) { toast('加载角色列表失败','error'); }
+}
+
+/* ═══════════════════════════════════════════════════
+   CHARACTER — CREATE / EDIT MODAL
+═══════════════════════════════════════════════════ */
+const CHAR_FIELDS = ['name','age','description','personality','behavior','speech',
+  'likes','dislikes','backstory','scenario','first_mes','mes_example','system_prompt'];
+
+let editingCharName = null;
+
+function openCreateModal() {
+  editingCharName = null;
+  document.getElementById('charModalTitle').textContent = '新建角色卡';
+  document.getElementById('charModalSaveBtn').textContent = '创建';
+  CHAR_FIELDS.forEach(f => document.getElementById('f-'+f).value = '');
+  document.getElementById('charModal').classList.add('visible');
+}
+
+async function openEditModal(name) {
+  editingCharName = name;
+  document.getElementById('charModalTitle').textContent = `编辑角色卡：${name}`;
+  document.getElementById('charModalSaveBtn').textContent = '保存修改';
+  try {
+    const r = await apiJson(`/api/character/${encodeURIComponent(name)}`);
+    if (r.success) {
+      CHAR_FIELDS.forEach(f => {
+        const el = document.getElementById('f-'+f);
+        if (el) el.value = r.data[f]||'';
+      });
+    }
+  } catch(e) { toast('加载角色数据失败','error'); }
+  document.getElementById('charModal').classList.add('visible');
+}
+
+function closeCharModal() {
+  document.getElementById('charModal').classList.remove('visible');
+  editingCharName = null;
+}
+
+async function saveCharFromModal() {
+  const data = {};
+  let valid = true;
+  CHAR_FIELDS.forEach(f => {
+    const v = document.getElementById('f-'+f).value.trim();
+    data[f] = v;
+    if (['name','description','personality','speech','scenario','first_mes'].includes(f) && !v) {
+      valid = false;
+    }
+  });
+  if (!valid) { toast('请填写必填字段（*标注）','warn'); return; }
+
+  const path = editingCharName
+    ? `/api/character/${encodeURIComponent(editingCharName)}/update`
+    : '/api/character/create';
+  const method = editingCharName ? 'POST' : 'POST';
+
+  try {
+    const r = await api(path, {method, headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(data)}).then(r=>r.json());
+    if (r.success) {
+      toast(editingCharName?'角色已更新':'角色已创建','success');
+      closeCharModal();
+      loadCharacterList();
+    } else {
+      toast(r.error||'保存失败','error');
+    }
+  } catch(e) { toast('保存失败：'+e.message,'error'); }
+}
+
+/* ═══════════════════════════════════════════════════
+   CHARACTER — UNLOAD
+═══════════════════════════════════════════════════ */
+async function unloadChar(name) {
+  if (activeCharacter !== name) return;
+  try {
+    const r = await api('/api/unload', {method:'POST'}).then(r=>r.json());
+    if (r.success) {
+      activeCharacter = null; characterData = null;
+      document.getElementById('chatHeader').style.display='none';
+      document.getElementById('inputArea').style.display='none';
+      document.getElementById('emptyState').style.display='';
+      const area = document.getElementById('messagesArea');
+      area.innerHTML = '';
+      toast('角色已卸载','info');
+      loadCharacterList();
+    } else { toast(r.error||'卸载失败','error'); }
+  } catch(e) { toast('卸载失败：'+e.message,'error'); }
+}
+
+/* ═══════════════════════════════════════════════════
+   CHARACTER — DELETE
+═══════════════════════════════════════════════════ */
+async function deleteChar(name) {
+  if (!confirm(`确认删除角色「${name}」？`)) return;
+  try {
+    const r = await api(`/api/character/${encodeURIComponent(name)}`,{method:'DELETE'}).then(r=>r.json());
+    if (r.success) {
+      toast(`角色「${name}」已删除`,'success');
+      if (activeCharacter===name) {
+        activeCharacter=null; characterData=null;
+        document.getElementById('chatHeader').style.display='none';
+        document.getElementById('inputArea').style.display='none';
+        document.getElementById('emptyState').style.display='';
+      }
+      loadCharacterList();
+    } else { toast(r.error||'删除失败','error'); }
+  } catch(e) { toast('删除失败：'+e.message,'error'); }
+}
+
+/* ═══════════════════════════════════════════════════
+   CHARACTER — DETAIL VIEW
+═══════════════════════════════════════════════════ */
+async function viewCharDetail(name) {
+  try {
+    const r = await apiJson(`/api/character/${encodeURIComponent(name)}`);
+    if (!r.success) { toast('加载失败','error'); return; }
+    const d = r.data;
+    document.getElementById('detailModalName').textContent = d.name||name;
+    const sections = [
+      {k:'age',l:'年龄'},{k:'description',l:'外貌描写'},{k:'personality',l:'性格'},
+      {k:'behavior',l:'行为模式'},{k:'speech',l:'语言特征'},{k:'likes',l:'喜好'},
+      {k:'dislikes',l:'厌恶'},{k:'backstory',l:'背景故事'},{k:'scenario',l:'场景设定'},
+      {k:'first_mes',l:'第一条消息'},{k:'mes_example',l:'对话范例'},{k:'system_prompt',l:'心理建模'}
+    ];
+    let html = '';
+    for (const s of sections) {
+      if (d[s.k]) html += `<div class="form-group"><label>${s.l}</label><p style="font-size:13px;line-height:1.7;color:var(--text-secondary);white-space:pre-wrap;">${escHtml(d[s.k])}</p></div>`;
+    }
+    document.getElementById('detailModalBody').innerHTML = html;
+    document.getElementById('detailModal').classList.add('visible');
+  } catch(e) { toast('加载详情失败','error'); }
+}
+
+function closeDetailModal() {
+  document.getElementById('detailModal').classList.remove('visible');
+}
+
+/* ═══════════════════════════════════════════════════
+   SAVE SLOTS
+═══════════════════════════════════════════════════ */
+
+function renderSlots(charName, saves) {
+  const slotCards = [];
+  for (let i = 1; i <= 3; i++) {
+    const save = (saves || []).find(s => s.slot === i);
+    if (save) {
+      const ts = save.timestamp ? new Date(save.timestamp).toLocaleString('zh-CN') : '';
+      slotCards.push(`
+        <div class="slot-card filled">
+          <div class="slot-num">槽位 ${i}</div>
+          <div class="slot-summary">${escHtml(save.summary || '(无描述)')}</div>
+          <div class="slot-date">${escHtml(ts)}</div>
+          <div class="slot-actions">
+            <button class="btn small primary" onclick="resumeSave('${escHtml(charName)}', ${i})">▶ 恢复</button>
+            <button class="btn small danger" onclick="deleteSaveSlot('${escHtml(charName)}', ${i})">🗑️ 删除</button>
+          </div>
+        </div>`);
+    } else {
+      slotCards.push(`
+        <div class="slot-card empty">
+          <div class="slot-num">槽位 ${i}</div>
+          <div style="font-size:13px;color:var(--text-muted);text-align:center;padding:12px 0;">空</div>
+        </div>`);
+    }
+  }
+  return slotCards.join('');
+}
+
+async function loadSaveSlots() {
+  const activeDiv = document.getElementById('activeCharSaves');
+  const allDiv = document.getElementById('allSaves');
+  const noChar = document.getElementById('noActiveChar');
+  const saveNowBtn = document.getElementById('saveNowBtn');
+  const activeSection = document.getElementById('activeCharSection');
+
+  if (saveNowBtn) saveNowBtn.disabled = !activeCharacter;
+
+  // Load saves for active character
+  if (activeCharacter) {
+    if (noChar) noChar.style.display = 'none';
+    if (activeSection) activeSection.style.display = '';
+    try {
+      const r = await apiJson(`/api/saves/${encodeURIComponent(activeCharacter)}`);
+      if (activeDiv) {
+        activeDiv.innerHTML = renderSlots(activeCharacter, r.saves || []);
+      }
+    } catch(e) {
+      if (activeDiv) activeDiv.innerHTML = '<div style="color:var(--error);padding:12px;">加载失败</div>';
+    }
+  } else {
+    if (noChar) noChar.style.display = '';
+    if (activeSection) activeSection.style.display = 'none';
+    if (activeDiv) activeDiv.innerHTML = '';
+  }
+
+  // Load saves for all characters
+  try {
+    const chars = await apiJson('/api/characters');
+    let allHtml = '';
+    for (const c of (chars || [])) {
+      try {
+        const r = await apiJson(`/api/saves/${encodeURIComponent(c.name)}`);
+        if (r.saves && r.saves.length > 0) {
+          allHtml += `<div class="wb-section"><h3>📁 ${escHtml(c.name)}</h3><div class="slots-grid">${renderSlots(c.name, r.saves)}</div></div>`;
+        }
+      } catch(e) {}
+    }
+    if (allDiv) allDiv.innerHTML = allHtml || '<div class="wb-empty">暂无存档</div>';
+  } catch(e) {
+    if (allDiv) allDiv.innerHTML = '<div class="wb-empty">加载失败</div>';
+  }
+}
+
+async function quickSave() {
+  if (!activeCharacter) {
+    toast('请先加载角色', 'warn');
+    return;
+  }
+  // 自动选择空槽位
+  try {
+    const r = await apiJson(`/api/saves/${encodeURIComponent(activeCharacter)}`);
+    const usedSlots = (r.saves || []).map(s => s.slot);
+    let slot = 1;
+    while (usedSlots.includes(slot)) slot++;
+    if (slot > 3) slot = 1; // 全满覆盖第一个
+
+    const result = await api('/api/save', {
+      method: 'POST',
+      body: JSON.stringify({
+        character: activeCharacter,
+        summary: '快速存档 ' + new Date().toLocaleString('zh-CN'),
+        slot: slot
+      })
+    }).then(r => r.json());
+
+    if (result.success) {
+      toast(`存档成功 · 槽位 ${slot}`, 'success');
+      loadSaveSlots();
+    } else {
+      toast(result.error || '存档失败', 'error');
+    }
+  } catch(e) {
+    toast('存档失败：' + e.message, 'error');
+  }
+}
+
+async function resumeSave(charName, slot) {
+  if (!confirm(`确认恢复「${charName}」的槽位 ${slot} 存档？`)) return;
+  try {
+    const r = await api(`/api/saves/${encodeURIComponent(charName)}/${slot}/resume`, { method: 'POST' }).then(r => r.json());
+    if (r.success) {
+      // 恢复存档后，获取会话中的消息
+      const msgResp = await api('/api/messages').then(r => r.json());
+      messages = Array.isArray(msgResp) ? msgResp : [];
+      
+      // 更新UI
+      activeCharacter = charName;
+      const chatHeader = document.getElementById('chatHeader');
+      const inputArea = document.getElementById('inputArea');
+      const emptyState = document.getElementById('emptyState');
+      const charNameEl = document.getElementById('charName');
+      if (chatHeader) chatHeader.style.display = '';
+      if (inputArea) inputArea.style.display = '';
+      if (emptyState) emptyState.style.display = 'none';
+      if (charNameEl) charNameEl.textContent = charName;
+      
+      // 渲染消息
+      const area = document.getElementById('messagesArea');
+      if (area) area.innerHTML = '';
+      for (const msg of messages) {
+        addMsg(msg.role, msg.content, msg.time);
+      }
+      
+      switchPanel('chat');
+      toast(`存档已恢复 (${messages.length} 条消息)`, 'success');
+    } else {
+      toast(r.error || '恢复失败', 'error');
+    }
+  } catch(e) {
+    toast('恢复失败：' + e.message, 'error');
+  }
+}
+
+async function deleteSaveSlot(charName, slot) {
+  if (!confirm(`确认删除「${charName}」的槽位 ${slot} 存档？`)) return;
+  try {
+    const r = await api(`/api/saves/${encodeURIComponent(charName)}/${slot}`, { method: 'DELETE' }).then(r => r.json());
+    if (r.success) {
+      toast('存档已删除', 'success');
+      loadSaveSlots();
+    } else {
+      toast(r.error || '删除失败', 'error');
+    }
+  } catch(e) {
+    toast('删除失败：' + e.message, 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   WORLD BOOK
+═══════════════════════════════════════════════════ */
+async function loadWorldBooks() {
+  try {
+    const [loadedR, availR] = await Promise.all([
+      apiJson('/api/worldbooks'),
+      apiJson('/api/worldbooks/available')
+    ]);
+    
+    const loadedDiv = document.getElementById('wbLoaded');
+    const availDiv  = document.getElementById('wbAvailable');
+    const emptyEl   = document.getElementById('wbEmpty');
+    const availEmptyEl = document.getElementById('wbAvailEmpty');
+
+    // 已挂载
+    const loaded = loadedR.worldbooks || [];
+    if (loaded.length === 0) {
+      if (loadedDiv) loadedDiv.innerHTML = '';
+      if (emptyEl) emptyEl.style.display = '';
+    } else {
+      if (emptyEl) emptyEl.style.display = 'none';
+      if (loadedDiv) loadedDiv.innerHTML = loaded.map(wb => `
+        <div class="wb-item">
+          <span class="wb-name">📖 ${escHtml(wb.name || wb.file)}</span>
+          <div class="wb-actions">
+            <button class="btn small danger" onclick="unloadWorldBook('${escHtml(wb.name || wb.file)}')">卸载</button>
+          </div>
+        </div>`).join('');
+    }
+
+    // 可用
+    const avail = availR.worldbooks || [];
+    if (avail.length === 0) {
+      if (availDiv) availDiv.innerHTML = '';
+      if (availEmptyEl) availEmptyEl.style.display = '';
+    } else {
+      if (availEmptyEl) availEmptyEl.style.display = 'none';
+      if (availDiv) availDiv.innerHTML = avail.map(wb => `
+        <div class="wb-item">
+          <span class="wb-name">📦 ${escHtml(wb.name)} <small style="color:var(--text-muted)">(${wb.entries || 0} 条目)</small></span>
+          <div class="wb-actions">
+            <button class="btn small primary" onclick="loadWorldBook('${escHtml(wb.file)}')">加载</button>
+          </div>
+        </div>`).join('');
+    }
+  } catch(e) { toast('加载 World Book 失败', 'error'); }
+}
+
+async function loadWorldBook(file) {
+  try {
+    const r = await api(`/api/worldbooks/load/${encodeURIComponent(file)}`, { method: 'POST' }).then(r => r.json());
+    if (r.success) { toast('世界书已加载', 'success'); loadWorldBooks(); }
+    else { toast(r.error || '加载失败', 'error'); }
+  } catch(e) { toast('加载失败', 'error'); }
+}
+
+async function unloadWorldBook(name) {
+  try {
+    const r = await api(`/api/worldbooks/unload/${encodeURIComponent(name)}`, { method: 'POST' }).then(r => r.json());
+    if (r.success) { toast('世界书已卸载', 'success'); loadWorldBooks(); }
+    else { toast(r.error || '卸载失败', 'error'); }
+  } catch(e) { toast('卸载失败', 'error'); }
+}
+
+/* ═══════════════════════════════════════════════════
+   DISTILL
+═══════════════════════════════════════════════════ */
+async function loadResearchList() {
+  try {
+    const r = await apiJson('/api/research/list');
+    const chars = r.characters || [];
+    const container = document.getElementById('researchList');
+    if (chars.length === 0) {
+      container.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px;">暂无调研，输入角色名开始蒸馏</div>';
+      return;
+    }
+    container.innerHTML = chars.map(c => `
+      <div class="research-item" style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;margin:4px 0;background:var(--bg-secondary);border-radius:6px;border:1px solid var(--border-color);">
+        <div>
+          <span style="font-weight:600;">${escHtml(c.name)}</span>
+          ${c.work ? `<span style="font-size:11px;color:var(--text-muted);margin-left:6px;">${escHtml(c.work)}</span>` : ''}
+          <span style="font-size:10px;color:var(--text-muted);margin-left:4px;">· ${c.total}条素材 · ${c.quality || '?'}</span>
+          ${c.card_ready ? '<span style="font-size:10px;color:var(--green);margin-left:4px;">✅ 有卡片</span>' : '<span style="font-size:10px;color:var(--orange);margin-left:4px;">⚠️ 待生成卡片</span>'}
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          ${c.card_ready
+            ? `<button class="btn small primary" onclick="loadCharacter('${escHtml(c.name)}', null); switchPanel('chat')">💬 加载</button>`
+            : `<button class="btn small primary" onclick="generateCard('${escHtml(c.name)}'); setTimeout(()=>loadResearchList(),5000)">🎴 生成卡片</button>`
+          }
+        </div>
+      </div>
+    `).join('');
+  } catch(e) { 
+    const container = document.getElementById('researchList');
+    container.innerHTML = `<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px;">加载失败: ${e.message}</div>`;
+  }
+}
+
+async function startDistill() {
+  const btn = document.getElementById('distillBtn');
+  const name = document.getElementById('distillName').value.trim();
+  const work = document.getElementById('distillWork').value.trim();
+  const type = document.getElementById('distillType').value;
+  const lang = document.getElementById('distillLang').value;
+
+  if (!name) { toast('请输入角色名', 'warn'); return; }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ 蒸馏中...';
+  appendDistillLog('info', `开始蒸馏: ${name} (${work || '未知作品'})`);
+
+  try {
+    const r = await api('/api/distill', {
+      method: 'POST',
+      body: JSON.stringify({ char_name: name, work_name: work, media_type: type, lang: lang })
+    }).then(r => r.json());
+
+    if (!r.success) {
+      appendDistillLog('error', `启动失败: ${r.error}`);
+      btn.disabled = false;
+      btn.textContent = '🚀 开始蒸馏';
+      return;
+    }
+
+    appendDistillLog('info', '蒸馏已启动，等待结果...');
+    distillPolling = setInterval(pollDistillStatus, 3000);
+
+  } catch(e) {
+    appendDistillLog('error', `错误: ${e.message}`);
+    btn.disabled = false;
+    btn.textContent = '🚀 开始蒸馏';
+  }
+}
+
+async function pollDistillStatus() {
+  try {
+    const r = await apiJson('/api/distill/status');
+    if (r.progress) appendDistillLog('info', r.progress);
+    if (r.error) appendDistillLog('error', r.error);
+
+    if (!r.running) {
+      clearInterval(distillPolling);
+      distillPolling = null;
+      document.getElementById('distillBtn').disabled = false;
+      document.getElementById('distillBtn').textContent = '🚀 开始蒸馏';
+
+      if (r.result) {
+        const result = r.result;
+        if (result.card_generated) {
+          appendDistillLog('success', `✅ 蒸馏完成！角色卡已生成: ${result.char_name}.yaml (${result.card_size || '?'} 字符)`);
+          appendDistillLog('info', `📂 卡片路径: ${result.card_path}`);
+          // 显示一键加载按钮
+          const loadBtn = document.createElement('button');
+          loadBtn.className = 'btn primary small';
+          loadBtn.style.cssText = 'margin-top:6px;';
+          loadBtn.textContent = `📥 加载角色「${result.char_name}」`;
+          loadBtn.onclick = () => {
+            loadCharacter(result.char_name, null);
+            // 切换到对话面板
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('panel-chat').classList.add('active');
+            document.querySelector('[data-target="panel-chat"]').classList.add('active');
+          };
+          const logEl = document.getElementById('distillLog');
+          logEl.appendChild(loadBtn);
+        } else if (result.card_error) {
+          appendDistillLog('warn', `⚠️ 调研完成但卡片生成失败: ${result.card_error}`);
+          // 提供手动重试按钮
+          const retryBtn = document.createElement('button');
+          retryBtn.className = 'btn small';
+          retryBtn.style.cssText = 'margin-top:6px;';
+          retryBtn.textContent = `🔄 重新生成角色卡「${result.char_name}」`;
+          retryBtn.onclick = () => generateCard(result.char_name);
+          const logEl = document.getElementById('distillLog');
+          logEl.appendChild(retryBtn);
+        } else {
+          // 新增：卡片未生成也未报错，可能是旧版本后端或其他原因，显示生成按钮
+          appendDistillLog('success', `调研完成: ${result.char_name}`);
+          appendDistillLog('info', '角色卡尚未生成');
+          const genBtn = document.createElement('button');
+          genBtn.className = 'btn primary small';
+          genBtn.style.cssText = 'margin-top:6px;';
+          genBtn.textContent = `🎴 生成角色卡「${result.char_name}」`;
+          genBtn.onclick = () => generateCard(result.char_name);
+          const logEl = document.getElementById('distillLog');
+          logEl.appendChild(genBtn);
+        }
+        loadCharacterList();
+        loadResearchList();
+      }
+    }
+  } catch(e) { appendDistillLog('error', `轮询错误: ${e.message}`); }
+}
+
+async function generateCard(charName) {
+  try {
+    appendDistillLog('info', `正在为「${charName}」生成角色卡...`);
+    const r = await api('/api/distill/generate-card', {
+      method: 'POST',
+      body: JSON.stringify({ char_name: charName })
+    }).then(r => r.json());
+    if (r.success) {
+      const label = r.template ? '📝 模板' : '🤖 AI';
+      appendDistillLog('success', `✅ ${label}角色卡已生成: ${charName}.yaml (${r.size} 字符)`);
+      if (r.template) appendDistillLog('info', '💡 提示：在设置中配置 DeepSeek API Key 可生成更高质量卡片');
+      // 显示一键加载按钮
+      const loadBtn = document.createElement('button');
+      loadBtn.className = 'btn primary small';
+      loadBtn.style.cssText = 'margin-top:6px;';
+      loadBtn.textContent = `📥 加载角色「${charName}」`;
+      loadBtn.onclick = () => { loadCharacter(charName, null); switchPanel('chat'); };
+      document.getElementById('distillLog').appendChild(loadBtn);
+      loadCharacterList();
+      loadResearchList();
+    } else {
+      appendDistillLog('error', `生成失败: ${r.error}`);
+    }
+  } catch(e) { appendDistillLog('error', `错误: ${e.message}`); }
+}
+
+function appendDistillLog(level, msg) {
+  const log = document.getElementById('distillLog');
+  const ts = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const line = document.createElement('div');
+  line.className = `log-line ${level}`;
+  line.innerHTML = `<span class="log-ts">[${ts}]</span> ${escHtml(msg)}`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+/* ═══════════════════════════════════════════════════
+   PNG IMPORT
+═══════════════════════════════════════════════════ */
+
+async function uploadPng() {
+  const input = document.getElementById('pngFileInput');
+  const file = input.files[0];
+  if (!file) { toast('请选择 PNG 文件', 'warn'); return; }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const r = await fetch(API_BASE + '/api/png-import', { method: 'POST', body: formData }).then(r => r.json());
+    if (r.success) {
+      toast(`角色「${r.name}」已导入`, 'success');
+      loadCharacterList();
+      document.getElementById('pngFileInput').value = '';
+    } else {
+      toast(r.error || '导入失败', 'error');
+    }
+  } catch(e) { toast('导入失败：' + e.message, 'error'); }
+}
+
+function confirmPngImport() { /* 已在上传时直接导入 */ }
+function cancelPngImport() {
+  document.getElementById('pngFileInput').value = '';
+  document.getElementById('pngPreview').style.display = 'none';
+}
+
+/* ═══════════════════════════════════════════════════
+   SETTINGS
+═══════════════════════════════════════════════════ */
+async function saveConfig() {
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  const model  = document.getElementById('modelSelect').value;
+  try {
+    const r = await api('/api/config', {
+      method: 'POST',
+      body: JSON.stringify({ api_key: apiKey || undefined, model: model })
+    }).then(r => r.json());
+    if (r.success) {
+      toast('配置已保存', 'success');
+      loadSettings();
+    } else { toast('保存失败', 'error'); }
+  } catch(e) { toast('保存失败：' + e.message, 'error'); }
+}
+
+async function loadSettings() {
+  try {
+    const [config, status, soul, tavilyStatus] = await Promise.all([
+      apiJson('/api/config'),
+      apiJson('/api/engine/status'),
+      apiJson('/api/soul').catch(() => ({ content: 'SOUL.md 不存在' })),
+      apiJson('/api/tavily/status').catch(() => ({ available: false }))
+    ]);
+
+    // 引擎状态
+    const engDiv = document.getElementById('engineStatus');
+    const eng = status || {};
+    if (engDiv) engDiv.innerHTML = `
+      <div class="eng-stat"><div class="es-label">当前角色</div><div class="es-value">${escHtml(eng.active || activeCharacter || '未加载')}</div></div>
+      <div class="eng-stat"><div class="es-label">消息数</div><div class="es-value">${eng.message_count || 0}</div></div>
+      <div class="eng-stat"><div class="es-label">模型</div><div class="es-value">${escHtml(eng.model || config.model || '—')}</div></div>
+      <div class="eng-stat"><div class="es-label">DeepSeek</div><div class="es-value">${config.api_key_set ? '✅ 已配置' : '⚠️ 未配置'}</div></div>
+      <div class="eng-stat"><div class="es-label">Tavily 搜索</div><div class="es-value">${tavilyStatus.available ? '✅ 优先启用' : '❌ 未配置'}</div></div>
+    `;
+
+    // SOUL.md
+    const soulDiv = document.getElementById('soulPreview');
+    if (soulDiv) soulDiv.textContent = soul.content || '暂无 SOUL.md';
+
+  } catch(e) { /* 静默失败 */ }
+}
+
+function toggleDebug() {
+  const panel = document.getElementById('debugPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+/* ═══════════════════════════════════════════════════
+   LOG PANEL (CHAT OVERLAY)
+═══════════════════════════════════════════════════ */
+function toggleLogPanel() {
+  const existing = document.getElementById('logOverlay');
+  if (existing) {
+    existing.remove();
+    return;
+  }
+
+  const logs = getLogs();
+  const overlay = document.createElement('div');
+  overlay.id = 'logOverlay';
+  overlay.style.cssText = `
+    position:fixed; top:60px; right:20px; width:420px; max-height:70vh;
+    background:var(--bg-secondary); border:1px solid var(--border);
+    border-radius:12px; z-index:150; display:flex; flex-direction:column;
+    box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  `;
+  overlay.innerHTML = `
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-weight:600;font-size:13px;">📋 运行日志</span>
+      <button onclick="document.getElementById('logOverlay').remove()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;">×</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:10px 16px;font-family:Consolas,monospace;font-size:11px;line-height:1.6;max-height:60vh;">
+      ${logs.length === 0 ? '<div style="color:var(--text-muted);">暂无日志</div>' :
+        logs.slice(-100).map(l => {
+          const colors = { debug: '#888', info: '#29b6f6', warn: '#ff9800', error: '#f44336' };
+          return `<div style="color:${colors[l.level]||'#888'};margin-bottom:2px;">[${new Date(l.t).toLocaleTimeString()}] [<b>${l.level}</b>] [${l.tag}] ${escHtml(l.msg)}</div>`;
+        }).join('')}
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+/* ═══════════════════════════════════════════════════
+   SAVE MODAL (legacy support)
+═══════════════════════════════════════════════════ */
+function closeSaveModal() {
+  document.getElementById('saveModal').classList.remove('visible');
+}
+
+async function confirmSave() {
+  if (!activeCharacter) { toast('请先加载角色', 'warn'); return; }
+  const summary = document.getElementById('saveSummary').value.trim();
+  const slotVal = document.getElementById('saveSlotSelect').value;
+  const slot = slotVal ? parseInt(slotVal) : null;
+
+  try {
+    const r = await api('/api/save', {
+      method: 'POST',
+      body: JSON.stringify({ character: activeCharacter, summary: summary || '手动存档', slot: slot })
+    }).then(r => r.json());
+    if (r.success) {
+      toast(`存档成功 · 槽位 ${r.slot}`, 'success');
+      closeSaveModal();
+      loadSaveSlots();
+    } else { toast(r.error || '保存失败', 'error'); }
+  } catch(e) { toast('保存失败：' + e.message, 'error'); }
+}
+
+/* ═══════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════ */
+(async function init() {
+  // 检查 Tavily 状态
+  try {
+    const r = await apiJson('/api/tavily/status');
+    const dot = document.getElementById('tavilyDot');
+    const txt = document.getElementById('tavilyText');
+    if (r.available) {
+      if (dot) { dot.classList.add('connected'); dot.title = 'Tavily 搜索已启用'; }
+      if (txt) txt.textContent = 'Tavily ✅';
+    } else {
+      if (dot) dot.title = 'Tavily 未配置';
+      if (txt) txt.textContent = 'Tavily ❌';
+    }
+  } catch(e) { /* Tavily 不可用 */ }
+
+  // 连接指示
+  document.getElementById('connDot').classList.add('connected');
+})();
+
+</script>
 </body>
 </html>

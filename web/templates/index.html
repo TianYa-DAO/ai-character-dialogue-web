@@ -998,6 +998,9 @@ let isStreaming      = false;
 let pendingPngData   = null;
 let distillPolling    = null;
 
+/* ═══ API 基础路径（部署在子路径下时修改） ═══ */
+const API_BASE = '/ai-chat'; // 通过 Nginx 代理访问时设为 '/ai-chat'，本地直连 Flask 设为 ''
+
 /* ═══════════════════════════════════════════════════
    TOAST
 ═══════════════════════════════════════════════════ */
@@ -1052,7 +1055,7 @@ function now() {
 }
 
 function api(path, opts={}) {
-  return fetch(path, {
+  return fetch(API_BASE + path, {
     headers: { 'Content-Type':'application/json', ...(opts.headers||{}) },
     ...opts
   });
@@ -1181,7 +1184,7 @@ async function sendMessage() {
   if (!text || !activeCharacter || isStreaming) return;
 
   // 发送消息
-  let apiPath = '/api/stream';
+  let apiPath = API_BASE + '/api/stream';
   if (text.startsWith('/status')) {
     // 显示引擎状态
     try {
@@ -1919,7 +1922,7 @@ async function uploadPng() {
   formData.append('file', file);
 
   try {
-    const r = await fetch('/api/png-import', { method: 'POST', body: formData }).then(r => r.json());
+    const r = await fetch(API_BASE + '/api/png-import', { method: 'POST', body: formData }).then(r => r.json());
     if (r.success) {
       toast(`角色「${r.name}」已导入`, 'success');
       loadCharacterList();
